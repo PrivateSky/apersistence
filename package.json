@@ -1,0 +1,50 @@
+{
+  "name": "apersistence",
+  "description": "Generic persistence layer with memory caching, types",
+  "version": "1.0.0",
+  "homepage": "https://github.com/salboaie/abstract-persistence",
+  "author": {
+    "name": "Alboaie Sinica",
+    "email": "salboaie@gmail.com"
+  },
+  "contributors": [
+    {
+      "name": "Alboaie Sinica",
+      "email": "salboaie@gmail.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salboaie/abstract-persistence.git"
+  },
+  "bugs": {
+    "email": "salboaie@gmail.com",
+    "url": "https://github.com/salboaie/abstract-persistence/issues"
+  },
+  "directories": {
+    "lib": "./lib"
+  },
+  "engines": {
+
+    "node": ">=0.6.0"
+  },
+  "main": "./lib/persistence.js",
+  "licenses": [
+    {
+      "type": "LGPL",
+      "url": "http://www.gnu.org/licenses/lgpl.html"
+    }
+  ],
+  "_id": "apersistence@1.0.0",
+  "dependencies" : {
+    "asynchron": ">=1.0.3"
+  },
+  "optionalDependencies": {},
+  "_engineSupported": true,
+  "_npmVersion": "1.1.12",
+  "_nodeVersion": "v0.10.0",
+  "_defaultsLoaded": true,
+  "dist": {
+    
+  }
+}
