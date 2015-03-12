@@ -23,6 +23,10 @@ persistence.registerModel("TestModel", {
     sex: {
     type:'boolean',
     default:true
+    },
+    active: {
+        type:'boolean',
+        default:false
     }
 });
 
@@ -38,7 +42,9 @@ var t3 = persistence.lookup.async("TestModel", "T2");
     t11.age = 1;
     t3.age = 3;
     console.log("Loading objects... starting tests:");
-    persistence.save(t1);
+    persistence.save(t1, function(err,res){
+        //console.log("Saving ", res);
+    });
     persistence.save(t11);
     persistence.save(t3);
 }).wait(t1, t11, t3);

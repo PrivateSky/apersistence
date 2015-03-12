@@ -11,8 +11,8 @@ var modelUtil = require("../lib/ModelDescription.js");
 
 
 function RedisPersistenceStrategy(redisConnection){
-    var persistence = {};
 
+    var self = this;
 
     function mkKey(typeName, pk){
         return "ObjectSpace:" + typeName + ":" + pk;
@@ -27,7 +27,7 @@ function RedisPersistenceStrategy(redisConnection){
         (function(obj){
             var retObj = createRawObject(typeName, id);
             if(obj){
-                modelUtil.load(retObj, obj);
+                modelUtil.load(retObj, obj, self);
             }
             callback(null, retObj);
         }).wait(obj);
@@ -54,7 +54,7 @@ function RedisPersistenceStrategy(redisConnection){
                 if(o[k] != filter[k]) return;
             }
             var retObj = createRawObject(typeName);
-            modelUtil.load(retObj, o);
+            modelUtil.load(retObj, o, self);
             res.push(retObj);
         });
         callback(null, res);
@@ -105,7 +105,27 @@ function RedisPersistenceStrategy(redisConnection){
     this.query = function(type, query){
         console.log("RedisPersistenceStrategy: Query not implemented");
     }
+
+
+    var typeConverterRegistryFrom = {};
+    var typeConverterRegistryTo = {};
+
+    this.registerConverter = function(typeName, from, to){
+        typeConverterRegistryFrom[typeName] = from;
+        typeConverterRegistryTo[typeName] = to;
+    }
+
+    this.getConverterFrom = function(typeName){
+        return typeConverterRegistryFrom[typeName];
+    }
+
+    this.getConverterTo = function(typeName){
+        return typeConverterRegistryTo[typeName];
+    }
 }
+
+RedisPersistenceStrategy.prototype = require("../lib/BasicStrategy.js").createBasicStrategy();
+
 
 exports.createRedisStrategy = function(redisConnection){
     return new RedisPersistenceStrategy(redisConnection);
