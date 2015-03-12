@@ -47,13 +47,15 @@ function RedisPersistenceStrategy(redisConnection){
         redisConnection.del(key);
     }
 
-    function filterArray(arr, filter, callback){
+    function filterArray(typeName, arr, filter, callback){
         var res = [];
-        arr.reduce(function(o, res){
+        arr.forEach(function(o){
             for(var k in filter){
                 if(o[k] != filter[k]) return;
             }
-            res.push(o);
+            var retObj = createRawObject(typeName);
+            modelUtil.load(retObj, o);
+            res.push(retObj);
         });
         callback(null, res);
     }
@@ -61,12 +63,14 @@ function RedisPersistenceStrategy(redisConnection){
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKey = mkIndexKey(typeName, indexName, value);
 
-        console.log("!!!", idxKey);
-        redisConnection.hgetall(idxKey, function(err,res){
-            console.log(idxKey,res, err);
-            callback(err, res);
-        });
-        console.log("!!!", idxKey);
+        var ret = redisConnection.hgetall.async(idxKey);
+        (function(ret){
+            var arr = [];
+            for(var v in ret){
+                arr.push(JSON.parse(ret[v]));
+            }
+            callback(null, arr);
+        }).wait(ret);
     }
 
     function updateAllIndexes(typeName, obj){
@@ -81,7 +85,7 @@ function RedisPersistenceStrategy(redisConnection){
 
     this.filter = function(typeName, filter, callback){
         var indexes = modelUtil.getIndexes(typeName);
-        var foundIndex = null
+        var foundIndex = null;
 
         for(var k in filter){
             if(indexes.indexOf(k) !=-1){
@@ -91,12 +95,10 @@ function RedisPersistenceStrategy(redisConnection){
         }
         if(foundIndex){
             returnIndexPart(typeName, foundIndex, filter[foundIndex], function(err,res){
-                console.log(res);
-                filterArray(res, filter, callback);
+                filterArray(typeName, res, filter, callback);
             });
         } else {
-            console.log(filter, indexes);
-            throw new Error("Please add at least one index in your model to match at least one criteria from this filter:" + filter);
+            callback(new Error("Please add at least one index in your model to match at least one criteria from this filter:" + filter));
         }
     }
 

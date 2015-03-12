@@ -26,6 +26,7 @@ persistence.registerModel("TestModel", {
     }
 });
 
+
 var t1 = persistence.lookup.async("TestModel", "T1");
 var t11 = persistence.lookup.async("TestModel", "T11");
 var t3 = persistence.lookup.async("TestModel", "T2");
@@ -46,22 +47,28 @@ var t3 = persistence.lookup.async("TestModel", "T2");
 setTimeout(function(){
   var values =  persistence.filter.async("TestModel", {"age": 1});
     (function(values){
-        console.log("Test 1 values", values);
-        assert.equals(values.length, 2);
+        console.log("Testing that filter age 1 returns 2 values... ");
+        assert.equal(values.length, 2);
     }).wait(values);
 
     var age3Values =  persistence.filter.async("TestModel", {"age": 3});
     (function(age3Values){
-        console.log("Test 2 values", age3Values);
-        assert.equals(age3Values.length, 1);
+        console.log("Testing that filter age 3 returns 1 value... ");
+        assert.equal(age3Values.length, 1);
     }).wait(age3Values);
 
-    /*
+    setTimeout(function(){
+        process.exit(0);
+    }, 1000)
+
+
     var sexValues =  persistence.filter.async("TestModel", {"sex": true});
     (function(sexValues){
         console.log("Failed test!");
     }).wait(sexValues, function(err){
-            console.log("Negative test passed also!");
-        }); */
-    process.exit(0);
+            console.log("Negative test passed!");
+        });
+
 }, 1000);
+
+
