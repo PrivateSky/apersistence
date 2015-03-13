@@ -63,6 +63,13 @@ setTimeout(function(){
         assert.equal(age3Values.length, 1);
     }).wait(age3Values);
 
+    var age999Values =  persistence.filter.async("TestModel", {"age": 999});
+    (function(age999Values){
+        console.log("Testing that filter age 999 returns 0 values... ", age999Values);
+        assert.equal(age999Values.length, 0);
+    }).wait(age999Values);
+
+
     setTimeout(function(){
         process.exit(0);
     }, 1000)
