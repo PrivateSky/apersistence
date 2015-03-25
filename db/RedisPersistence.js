@@ -60,6 +60,10 @@ function RedisPersistenceStrategy(redisConnection){
         callback(null, res);
     }
 
+
+
+
+
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKey = mkIndexKey(typeName, indexName, value);
 
@@ -76,10 +80,21 @@ function RedisPersistenceStrategy(redisConnection){
     function updateAllIndexes(typeName, obj){
         var indexes      = modelUtil.getIndexes(typeName);
         var pkValue      = obj.__meta.getPK();
+        var stringValue = JSON.stringify(modelUtil.getInnerValues(obj, self));
+
         indexes.map(function(i){
             var idxKey = mkIndexKey(typeName, i, obj[i]);
-            redisConnection.hset(idxKey, pkValue, JSON.stringify(modelUtil.getInnerValues(obj)));
+            redisConnection.hset(idxKey, pkValue, stringValue);
         })
+
+        if( modelUtil.hasIndexAll(typeName)){
+            var idxKey = mkIndexKey(typeName, "specialIndex", "all");
+            redisConnection.hset(idxKey, pkValue, stringValue);
+        }
+    }
+
+    function returnAllObjects(typeName, callback){
+        returnIndexPart(typeName, "specialIndex", "all", callback);
     }
 
 
@@ -87,6 +102,10 @@ function RedisPersistenceStrategy(redisConnection){
         var indexes = modelUtil.getIndexes(typeName);
         var foundIndex = null;
 
+        if(!filter){
+            returnAllObjects(typeName, callback);
+            return ;
+        }
         for(var k in filter){
             if(indexes.indexOf(k) !=-1){
                 foundIndex = k;
@@ -98,7 +117,7 @@ function RedisPersistenceStrategy(redisConnection){
                 filterArray(typeName, res, filter, callback);
             });
         } else {
-            callback(new Error("Please add at least one index in your model to match at least one criteria from this filter:" + filter));
+            callback(new Error("Please add at least one index in your model to match at least one criteria from this filter:" + J(filter)));
         }
     }
 
