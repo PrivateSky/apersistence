@@ -34,16 +34,18 @@ function RedisPersistenceStrategy(redisConnection){
     }
 
     this.updateFields =  function(typeName, id, fields, values, obj){
+        deleteFromIndexes(typeName, id, obj);
         var key = mkKey(typeName, id);
         for(var i = 0, len = fields.length; i<len; i++){
             redisConnection.hset(key, fields[i], values[i]);
         }
-
         updateAllIndexes(typeName, obj);
     }
 
     this.deleteObject = function(typeName, id){
         var key = mkKey(typeName, id);
+        deleteFromIndexes(typeName, id);
+        console.log("Deleting ", key);
         redisConnection.del(key);
     }
 
@@ -90,6 +92,34 @@ function RedisPersistenceStrategy(redisConnection){
         if( modelUtil.hasIndexAll(typeName)){
             var idxKey = mkIndexKey(typeName, "specialIndex", "all");
             redisConnection.hset(idxKey, pkValue, stringValue);
+        }
+    }
+
+    function deleteFromIndexes(typeName, id, obj){
+        var indexes      = modelUtil.getIndexes(typeName);
+        var pkValue      = id;
+
+        function cleanAll(obj){
+            indexes.map(function(i){
+                var idxKey = mkIndexKey(typeName, i, obj[i]);
+                console.log("Deleting ", idxKey, pkValue);
+                redisConnection.hdel.async(idxKey, pkValue);
+            })
+
+            if( modelUtil.hasIndexAll(typeName)){
+                var idxKey = mkIndexKey(typeName, "specialIndex", "all");
+                console.log("Deleting ", idxKey, pkValue);
+                redisConnection.hdel.async(idxKey, pkValue);
+            }
+        }
+
+        if(!obj){
+            obj = self.getObject.async(typeName, id);
+            (function(obj){
+                cleanAll(obj);
+            }).wait(obj)
+        } else {
+            cleanAll(obj);
         }
     }
 
