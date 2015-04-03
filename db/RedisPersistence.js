@@ -45,7 +45,6 @@ function RedisPersistenceStrategy(redisConnection){
     this.deleteObject = function(typeName, id){
         var key = mkKey(typeName, id);
         deleteFromIndexes(typeName, id);
-        console.log("Deleting ", key);
         redisConnection.del(key);
     }
 
@@ -102,13 +101,11 @@ function RedisPersistenceStrategy(redisConnection){
         function cleanAll(obj){
             indexes.map(function(i){
                 var idxKey = mkIndexKey(typeName, i, obj[i]);
-                console.log("Deleting ", idxKey, pkValue);
                 redisConnection.hdel.async(idxKey, pkValue);
             })
 
             if( modelUtil.hasIndexAll(typeName)){
                 var idxKey = mkIndexKey(typeName, "specialIndex", "all");
-                console.log("Deleting ", idxKey, pkValue);
                 redisConnection.hdel.async(idxKey, pkValue);
             }
         }
@@ -147,7 +144,7 @@ function RedisPersistenceStrategy(redisConnection){
                 filterArray(typeName, res, filter, callback);
             });
         } else {
-            callback(new Error("Please add at least one index in your model to match at least one criteria from this filter:" + J(filter)));
+            callback(new Error("Please add at least one index in your model to match at least one criteria from this filter:" + JSON.stringify(filter)));
         }
     }
 
