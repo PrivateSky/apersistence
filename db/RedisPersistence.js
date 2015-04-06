@@ -37,7 +37,7 @@ function RedisPersistenceStrategy(redisConnection){
         deleteFromIndexes(typeName, id, obj);
         var key = mkKey(typeName, id);
         for(var i = 0, len = fields.length; i<len; i++){
-            redisConnection.hset(key, fields[i], values[i]);
+            redisConnection.hset.async(key, fields[i], values[i]);
         }
         updateAllIndexes(typeName, obj);
     }
@@ -85,12 +85,12 @@ function RedisPersistenceStrategy(redisConnection){
 
         indexes.map(function(i){
             var idxKey = mkIndexKey(typeName, i, obj[i]);
-            redisConnection.hset(idxKey, pkValue, stringValue);
+            redisConnection.hset.async(idxKey, pkValue, stringValue);
         })
 
         if( modelUtil.hasIndexAll(typeName)){
             var idxKey = mkIndexKey(typeName, "specialIndex", "all");
-            redisConnection.hset(idxKey, pkValue, stringValue);
+            redisConnection.hset.async(idxKey, pkValue, stringValue);
         }
     }
 
