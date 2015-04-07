@@ -12,10 +12,12 @@ var modelUtil = require("../lib/ModelDescription.js");
 
 function RedisPersistenceStrategy(redisConnection){
 
+    var ALL_INDEX = "specialIndex";
     var self = this;
 
-    function mkKey(typeName, pk){
-        return "ObjectSpace:" + typeName + ":" + pk;
+    function mkKey(typeName){
+        return "IndexSpace:" + typeName + ":" + ALL_INDEX + ":" + "all";
+
     }
 
     function mkIndexKey(typeName, indexName, value){
@@ -23,7 +25,7 @@ function RedisPersistenceStrategy(redisConnection){
     }
 
     this.getObject = function(typeName, id, callback){
-        var obj = redisConnection.hgetall.nasync(mkKey(typeName, id));
+        var obj = redisConnection.hget.jasync(mkKey(typeName), id);
         (function(obj){
             var retObj = createRawObject(typeName, id);
             if(obj){
@@ -34,18 +36,13 @@ function RedisPersistenceStrategy(redisConnection){
     }
 
     this.updateFields =  function(typeName, id, fields, values, obj){
-        deleteFromIndexes(typeName, id, obj);
-        var key = mkKey(typeName, id);
-        for(var i = 0, len = fields.length; i<len; i++){
-            redisConnection.hset.async(key, fields[i], values[i]);
-        }
-        updateAllIndexes(typeName, obj);
+        deleteFromIndexes(typeName, id, obj, function(err,res){
+            updateAllIndexes(typeName, obj);
+        });
     }
 
     this.deleteObject = function(typeName, id){
-        var key = mkKey(typeName, id);
         deleteFromIndexes(typeName, id);
-        redisConnection.del(key);
     }
 
     function filterArray(typeName, arr, filter, callback){
@@ -85,29 +82,31 @@ function RedisPersistenceStrategy(redisConnection){
 
         indexes.map(function(i){
             var idxKey = mkIndexKey(typeName, i, obj[i]);
-            redisConnection.hset.async(idxKey, pkValue, stringValue);
+            redisConnection.hset(idxKey, pkValue, stringValue);
         })
 
-        if( modelUtil.hasIndexAll(typeName)){
-            var idxKey = mkIndexKey(typeName, "specialIndex", "all");
-            redisConnection.hset.async(idxKey, pkValue, stringValue);
-        }
+        //if( modelUtil.hasIndexAll(typeName)){
+            var idxKey = mkKey(typeName);
+            redisConnection.hset(idxKey, pkValue, stringValue);
+        //}
     }
 
-    function deleteFromIndexes(typeName, id, obj){
+    function deleteFromIndexes(typeName, id, obj, callback){
         var indexes      = modelUtil.getIndexes(typeName);
         var pkValue      = id;
 
         function cleanAll(obj){
             indexes.map(function(i){
                 var idxKey = mkIndexKey(typeName, i, obj[i]);
-                redisConnection.hdel.async(idxKey, pkValue);
+                redisConnection.hdel(idxKey, pkValue);
             })
 
-            if( modelUtil.hasIndexAll(typeName)){
-                var idxKey = mkIndexKey(typeName, "specialIndex", "all");
-                redisConnection.hdel.async(idxKey, pkValue);
-            }
+            //if( modelUtil.hasIndexAll(typeName)){
+                var idxKey = mkKey(typeName);
+                redisConnection.hdel(idxKey, pkValue, function(){
+                    if(callback) callback();
+                });
+            //}
         }
 
         if(!obj){
