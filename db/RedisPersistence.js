@@ -17,12 +17,12 @@ function RedisPersistenceStrategy(redisConnection){
 
     function mkKey(typeName){
         return "IndexSpace:" + typeName + ":" + ALL_INDEX + ":" + "all";
-
     }
 
     function mkIndexKey(typeName, indexName, value){
         return "IndexSpace:" + typeName + ":" + indexName + ":" + value;
     }
+
 
     this.getObject = function(typeName, id, callback){
         var obj = redisConnection.hget.jasync(mkKey(typeName), id);
@@ -33,6 +33,17 @@ function RedisPersistenceStrategy(redisConnection){
             }
             callback(null, retObj);
         }).wait(obj);
+    }
+
+
+    this.findById = function(typeName, id, callback){
+        this.getObject(typeName, id, function(err, o){
+            if(self.isFresh(o)){
+                callback(null, null);
+            } else {
+                callback(null, o);
+            }
+        });
     }
 
     this.updateFields =  function(typeName, id, fields, values, obj){
