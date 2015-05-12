@@ -1,7 +1,7 @@
 {
   "name": "apersistence",
   "description": "Generic persistence layer with memory caching, types",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "homepage": "https://github.com/salboaie/abstract-persistence",
   "author": {
     "name": "Alboaie Sinica",
@@ -35,9 +35,10 @@
       "url": "http://www.gnu.org/licenses/lgpl.html"
     }
   ],
-  "_id": "apersistence@1.0.23",
+  "_id": "apersistence@1.0.24",
   "dependencies" : {
-    "asynchron": ">=1.0.19"
+    "asynchron": ">=1.0.19",
+    "moment": ">= 2.8.4"
   },
   "optionalDependencies": {},
   "_engineSupported": true,
