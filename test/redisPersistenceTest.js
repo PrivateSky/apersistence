@@ -1,8 +1,8 @@
 
 var assert = require("assert");
-var apersistence = require("../lib/persistence.js");
-var async = require("asynchron");
+var apersistence = require("../lib/abstractPersistence.js");
 var redis = require("redis");
+var async = require("asynchron");
 
 
 var redisConnection = async.bindAllMembers(redis.createClient());
@@ -28,7 +28,7 @@ persistence.registerModel("TestModel", {
         type:'boolean',
         default:false
     }
-});
+},function(){});
 
 
 var t1 = persistence.lookup.async("TestModel", "T1");
@@ -42,7 +42,7 @@ var t3 = persistence.lookup.async("TestModel", "T2");
     t11.age = 1;
     t3.age = 3;
     console.log("Loading objects... starting tests:");
-    persistence.save(t1, function(err,res){
+    persistence.saveObject(t1, function(err,res){
         //console.log("Saving ", res);
     });
     persistence.save(t11);

@@ -27,9 +27,7 @@ describe("Testing basic APIs", function(){
 
     var userJhon = persistence.lookup.async("UserModel", "Jhon");
 
-    it("Should retrive an model object", function(done){
-
-
+    it("Should retrive a model instance", function(done){
         (function(userJhon){
 
             persistence.save(userJhon, function(err, diff){
@@ -63,8 +61,5 @@ describe("Testing basic APIs", function(){
         }).wait(userJhon);
 
     });
-
-
-
 })
 

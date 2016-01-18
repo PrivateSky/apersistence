@@ -1,8 +1,9 @@
 
 var assert = require("assert");
-var apersistence = require("../lib/persistence.js");
+var apersistence = require("../lib/abstractPersistence.js");
 var async = require("asynchron");
 var redis = require("redis");
+var async = require("asynchron");
 
 var uuid = require('node-uuid');
 var objuid = uuid.v4();
@@ -30,6 +31,7 @@ persistence.registerModel("TestModel", {
 describe("Test date fields", function(){
 
     it("Should save the date and return back properly...", function(done){
+
         var t1 = persistence.lookup.async("TestModel", objuid);
         (function(t1){
             assert.equal(t1.lastModified, dateNow);
@@ -38,6 +40,7 @@ describe("Test date fields", function(){
                 done();
             });
         }).wait(t1);
+
     });
 
 });

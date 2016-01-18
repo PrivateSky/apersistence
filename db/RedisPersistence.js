@@ -6,9 +6,9 @@ function objectToArray(o){
     }
     return res;
 }
-var createRawObject = require("../lib/persistence.js").createRawObject;
+var createRawObject = require("../lib/abstractPersistence.js").createRawObject;
 var modelUtil = require("../lib/ModelDescription.js");
-
+var q = require('q');
 
 function RedisPersistenceStrategy(redisConnection){
 
@@ -23,7 +23,6 @@ function RedisPersistenceStrategy(redisConnection){
         return "IndexSpace:" + typeName + ":" + indexName + ":" + value;
     }
 
-
     this.getObject = function(typeName, id, callback){
         var obj = redisConnection.hget.jasync(mkKey(typeName), id);
         (function(obj){
@@ -31,10 +30,10 @@ function RedisPersistenceStrategy(redisConnection){
             if(obj){
                 modelUtil.load(retObj, obj, self);
             }
+            self.cache[id] = retObj;
             callback(null, retObj);
         }).wait(obj);
     }
-
 
     this.findById = function(typeName, id, callback){
         this.getObject(typeName, id, function(err, o){
@@ -46,14 +45,51 @@ function RedisPersistenceStrategy(redisConnection){
         });
     }
 
-    this.updateFields =  function(typeName, id, fields, values, obj){
-        deleteFromIndexes(typeName, id, obj, function(err,res){
-            updateAllIndexes(typeName, obj);
+    this.updateFields =  function(obj,  fields, values, callback){
+        var id = obj.__meta.getPK();
+        var typeName = obj.__meta.typeName;
+
+        deleteFromIndexes(typeName, id, obj, function(err,res) {
+            if(err){
+                callback(err);
+            }
+            else {
+                obj.__meta.savedValues = {};
+
+                fields.forEach(function(field,index){obj[field] = values[index];});
+
+                updateAllIndexes(typeName, obj, function(err,result){
+                    if(err) callback(err);
+                    else {
+                        obj.__meta.savedValues = modelUtil.getInnerValues(obj,self);
+                        callback(null, obj);
+                    }
+                });
+            }
         });
     }
 
-    this.deleteObject = function(typeName, id){
-        deleteFromIndexes(typeName, id);
+    this.deleteObject = function(typeName, id,callback){
+        if(this.cache.hasOwnProperty(id)) {
+            deleteFromIndexes(typeName, id, self.cache[id], function(err,result){
+                delete self.cache[id];
+                delete result.__meta.savedValues;
+                callback(err,result);
+            });
+        }
+        else{
+            this.getObject(typeName,id,function(err,obj){
+                if(err){
+                    callback(err,null);
+                }else {
+                    deleteFromIndexes(typeName,id,obj,function(err,result){
+                        delete self.cache[id];
+                        delete result.__meta.savedValues;
+                        callback(err,result);
+                    });
+                }
+            })
+        }
     }
 
     function filterArray(typeName, arr, filter, callback){
@@ -69,10 +105,6 @@ function RedisPersistenceStrategy(redisConnection){
         callback(null, res);
     }
 
-
-
-
-
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKey = mkIndexKey(typeName, indexName, value);
 
@@ -86,54 +118,61 @@ function RedisPersistenceStrategy(redisConnection){
         }).wait(ret);
     }
 
-    function updateAllIndexes(typeName, obj){
+    function updateAllIndexes(typeName, obj,callback){
         var indexes      = modelUtil.getIndexes(typeName);
         var pkValue      = obj.__meta.getPK();
-        var stringValue = JSON.stringify(modelUtil.getInnerValues(obj, self));
-
-        indexes.map(function(i){
+        var innerVal = modelUtil.getInnerValues(obj,self);
+        var serInnerVal = modelUtil.serialiseObjectValues(typeName,innerVal,self);
+        var stringValue = JSON.stringify(serInnerVal);
+        var updatesReady = [];
+        var qHset = q.nbind(redisConnection.hset,redisConnection);
+        indexes.forEach(function(i){
             var idxKey = mkIndexKey(typeName, i, obj[i]);
-            redisConnection.hset(idxKey, pkValue, stringValue);
+            updatesReady.push(qHset(idxKey, pkValue, stringValue));
         })
 
-        //if( modelUtil.hasIndexAll(typeName)){
-            var idxKey = mkKey(typeName);
-            redisConnection.hset(idxKey, pkValue, stringValue);
-        //}
+        var idxKey = mkKey(typeName);
+        updatesReady.push(qHset(idxKey, pkValue, stringValue));
+
+        q.all(updatesReady).
+        then(function(){callback(null,obj);}).
+        catch(callback)
     }
 
     function deleteFromIndexes(typeName, id, obj, callback){
         var indexes      = modelUtil.getIndexes(typeName);
         var pkValue      = id;
 
-        function cleanAll(obj){
+        function cleanAll(obj,callback){
+
+            var qHdel = q.nbind(redisConnection.hdel,redisConnection);
+            var deletionsReady = [];
             indexes.map(function(i){
                 var idxKey = mkIndexKey(typeName, i, obj[i]);
-                redisConnection.hdel(idxKey, pkValue);
-            })
+                deletionsReady.push(qHdel(idxKey, pkValue));
+            });
 
-            //if( modelUtil.hasIndexAll(typeName)){
-                var idxKey = mkKey(typeName);
-                redisConnection.hdel(idxKey, pkValue, function(){
-                    if(callback) callback();
-                });
-            //}
+            var idxKey = mkKey(typeName);
+            deletionsReady.push(qHdel(idxKey, pkValue));
+
+            q.all(deletionsReady).
+            then(function(res){callback(null,obj);}).
+            catch(callback);
         }
 
-        if(!obj){
+        if(obj === undefined){
             obj = self.getObject.async(typeName, id);
             (function(obj){
-                cleanAll(obj);
+                cleanAll(obj,callback);
             }).wait(obj)
         } else {
-            cleanAll(obj);
+            cleanAll(obj,callback);
         }
     }
 
     function returnAllObjects(typeName, callback){
         returnIndexPart(typeName, "specialIndex", "all", callback);
     }
-
 
     this.filter = function(typeName, filter, callback){
         var indexes = modelUtil.getIndexes(typeName);
@@ -143,6 +182,7 @@ function RedisPersistenceStrategy(redisConnection){
             returnAllObjects(typeName, callback);
             return ;
         }
+
         for(var k in filter){
             if(indexes.indexOf(k) !=-1){
                 foundIndex = k;
@@ -158,26 +198,11 @@ function RedisPersistenceStrategy(redisConnection){
         }
     }
 
-    this.query = function(type, query){
+    this.query = function(type, query,callback){
         console.log("RedisPersistenceStrategy: Query not implemented");
+        callback();
     }
 
-
-    var typeConverterRegistryFrom = {};
-    var typeConverterRegistryTo = {};
-
-    this.registerConverter = function(typeName, from, to){
-        typeConverterRegistryFrom[typeName] = from;
-        typeConverterRegistryTo[typeName] = to;
-    }
-
-    this.getConverterFrom = function(typeName){
-        return typeConverterRegistryFrom[typeName];
-    }
-
-    this.getConverterTo = function(typeName){
-        return typeConverterRegistryTo[typeName];
-    }
 }
 
 RedisPersistenceStrategy.prototype = require("../lib/BasicStrategy.js").createBasicStrategy();
