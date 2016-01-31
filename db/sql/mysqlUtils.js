@@ -16,12 +16,13 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
         var dbType = persistence.persistenceStrategy.getDatabaseType(model[field].type);
 
         if(dbType === 'varchar'){
-            dbType+='(30) ';
+            dbType+= (model[field].maxSize!=undefined)?'('+model[field].maxSize+')':'(30) ';
         }
 
         if(dbType === 'int'){
-            dbType+='(10)';
+            dbType+=(model[field].maxSize!=undefined)?'('+model[field].maxSize+')':'(10)';
         }
+
 
         query+=dbType;
 
