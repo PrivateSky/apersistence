@@ -28,7 +28,7 @@
 
     "node": ">=0.6.0"
   },
-  "main": "./lib/persistence.js",
+  "main": "./lib/abstractPersistence.js",
   "licenses": [
     {
       "type": "LGPL",
