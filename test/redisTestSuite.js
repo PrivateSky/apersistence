@@ -1,7 +1,7 @@
 
 var async = require("asynchron");
-var assert       = require('semantic-firewall').assert;
-var exceptions   = require('semantic-firewall').exceptions;
+var assert       = require('double-check').assert;
+var exceptions   = require('double-check').exceptions;
 var apersistence = require("../lib/abstractPersistence.js");
 var redis = require("redis");
 var modelUtil = require ("../lib/ModelDescription");

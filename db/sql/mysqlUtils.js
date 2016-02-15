@@ -16,13 +16,12 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
         var dbType = persistence.persistenceStrategy.getDatabaseType(model[field].type);
 
         if(dbType === 'varchar'){
-            dbType+= (model[field].maxSize!=undefined)?'('+model[field].maxSize+')':'(30) ';
+            dbType+='(30) ';
         }
 
         if(dbType === 'int'){
-            dbType+=(model[field].maxSize!=undefined)?'('+model[field].maxSize+')':'(10)';
+            dbType+='(10)';
         }
-
 
         query+=dbType;
 
@@ -45,7 +44,7 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
 
 
 exports.insertRow = function(mysqlConnection,persistence,tableName,serializedData){
-    var query="INSERT INTO "+tableName+" (";
+    var query="INSERT IGNORE INTO "+tableName+" (";
     for (field in serializedData) {
         query += field + ",";
     }
