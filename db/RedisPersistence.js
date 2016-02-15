@@ -26,10 +26,12 @@ function RedisPersistenceStrategy(redisConnection){
     this.getObject = function(typeName, id, callback){
         var obj = redisConnection.hget.jasync(mkKey(typeName), id);
         (function(obj){
+
             var retObj = createRawObject(typeName, id);
             if(obj){
                 modelUtil.load(retObj, obj, self);
             }
+            console.log(obj);
             self.cache[id] = retObj;
             callback(null, retObj);
         }).wait(obj);
