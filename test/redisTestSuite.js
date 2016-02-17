@@ -45,11 +45,14 @@ var testFilter = require('./persistenceTests/testFilter').test;
 var testDeleteById = require('./persistenceTests/testDeleteById').test;
 var testSaveNewObject = require('./persistenceTests/testSaveNewObject').test;
 var testUpdateObject = require('./persistenceTests/testUpdateObject').test;
+var testExternalUpdate = require('./persistenceTests/testExternalUpdate').test;
 
 assert.steps("Redis test suite",[
     function(next){
         persistence.registerModel(modelName,model,function(){
-            next();
+                redisConnection.flushdb(function(){
+                    next();
+                })
         })
     },
     function(next){
@@ -96,6 +99,12 @@ assert.steps("Redis test suite",[
         })
     },
     function(next){
+        testExternalUpdate(persistence,modelName,[{id:"4",location:"NotBucuresti"}],function(testWasSuccessfull){
+            testWasSuccessfull();
+            next();
+        })
+    },
+    function(next){
         var ids = rawData.map(function(tableEntry){
             return tableEntry.id;
         });
@@ -107,8 +116,11 @@ assert.steps("Redis test suite",[
 
     },
     function(next){
-        redisConnection.quit();
-        next();
+        redisConnection.flushdb(function(){
+            redisConnection.quit();
+            next();
+        });
+
     }
 
 ])

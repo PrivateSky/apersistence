@@ -19,7 +19,7 @@ exports.test = function(persistence,typeName,ids,onSuccess){
                     next();
                 }
             })
-        });
+        })
 
         functions.push(function(next){
             persistence.findById(typeName,id,function(err,result){

@@ -31,7 +31,6 @@ function RedisPersistenceStrategy(redisConnection){
             if(obj){
                 modelUtil.load(retObj, obj, self);
             }
-            console.log(obj);
             self.cache[id] = retObj;
             callback(null, retObj);
         }).wait(obj);
