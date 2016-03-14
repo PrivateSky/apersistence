@@ -44,7 +44,7 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
 
 
 exports.insertRow = function(mysqlConnection,persistence,tableName,serializedData){
-    var query="INSERT INTO "+tableName+" (";
+    var query="INSERT IGNORE INTO "+tableName+" (";
     for (field in serializedData) {
         query += field + ",";
     }

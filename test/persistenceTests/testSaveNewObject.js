@@ -1,8 +1,8 @@
 /**
  * Created by ctalmacel on 12/28/15.
  */
-var assert       = require('semantic-firewall').assert;
-var exceptions   = require('semantic-firewall').exceptions;
+var assert       = require('double-check').assert;
+var exceptions   = require('double-check').exceptions;
 
 
 //this test depends on testFindById.js to work properly

@@ -4,8 +4,8 @@
 
 
 
-var assert       = require('semantic-firewall').assert;
-var exceptions   = require('semantic-firewall').exceptions;
+var assert       = require('double-check').assert;
+var exceptions   = require('double-check').exceptions;
 
 
 exports.test = function(persistence,typeName,ids,onSuccess){
@@ -19,7 +19,7 @@ exports.test = function(persistence,typeName,ids,onSuccess){
                     next();
                 }
             })
-        });
+        })
 
         functions.push(function(next){
             persistence.findById(typeName,id,function(err,result){

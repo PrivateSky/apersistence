@@ -4,8 +4,8 @@
 
 
 
-var assert       = require('semantic-firewall').assert;
-var exceptions   = require('semantic-firewall').exceptions;
+var assert       = require('double-check').assert;
+var exceptions   = require('double-check').exceptions;
 
 exports.test = function(persistence,typeName,validIds,invalidIds,onSuccess) {
 

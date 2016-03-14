@@ -5,17 +5,17 @@
 
 
 
-var mysql      = require('mysql');
 var apersistence = require("../lib/abstractPersistence.js");
 var mysqlUtils = require("../db/sql/mysqlUtils");
-var assert       = require('semantic-firewall').assert;
-var exceptions   = require('semantic-firewall').exceptions;
+var assert       = require('double-check').assert;
+var exceptions   = require('double-check').exceptions;
 var modelUtil  = require("../lib/ModelDescription");
+var mysql      = require('mysql');
 var mysqlConnection = mysql.createConnection({
     host     : 'localhost',
     user     : 'root',
     password : 'swarm',
-    database : 'TEST'
+    database : 'twitter_data'
 });
 
 var rawData = [
@@ -32,7 +32,8 @@ var model = {
     name: {
         type:'string',
         default:0,
-        index:true
+        index:true,
+        maxSize:140
     },
     location: {
         type:'string',
