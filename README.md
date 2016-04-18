@@ -1,4 +1,4 @@
-# apersistence: experimental module to create an abstraction/mapping between objects and possible mixtures of SQL and NOSQL databases
+# apersistence: module to create an abstraction/mapping between objects and possible mixtures of SQL and NOSQL databases. Sort of ORM but also for noSQL databases.
 
 
 #Why?
@@ -46,5 +46,4 @@
 
 
 #Observations/Caution
-   Only Redis Persistence is provided. This module works fine with SwarmCore implementation ( the redisConnection members are expected to be bound for usage with asynchron library)
-   While we will try to keep this API in future but there is no guarantee, use at your own risk. This module is highly experimental.
+    This module works fine with SwarmCore implementation ( the redisConnection members are expected to be bound for usage with asynchron library)   While we will try to keep this API in future but there is no guarantee, use at your own risk. This module is highly experimental and it is used mainly by the SwarmESB project.
