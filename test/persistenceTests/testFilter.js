@@ -26,7 +26,7 @@ exports.test = function(persistence,filterTests,onSuccess){
 
     testFunctions.push(function(next){
         onSuccess(next);
-    })
+    });
 
     assert.steps("Test filter",testFunctions);
 }
