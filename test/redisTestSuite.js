@@ -10,13 +10,13 @@ var modelUtil = require ("../lib/ModelDescription");
 var redisConnection = async.bindAllMembers(redis.createClient());
 var persistence = apersistence.createRedisPersistence(redisConnection);
 
-
-
 var rawData = [
     {id: "2", name: "Dana", location: "Tecuci",sex:true},
     {id: "3", name: "Ana", location: "Iasi",sex:false},
     {id: "4", name: "Ana", location: "Bucuresti",sex:true},
-    {id: "5", name: "Ion", location: "Iasi",sex:false}];
+    {id: "5", name: "Ion", location: "Iasi",sex:false}
+];
+
 var model = {
     id: {
         type:'int',
@@ -37,9 +37,9 @@ var model = {
         default:true
     }
 };
+
 var modelName = "Testy";
 var objects;
-
 var testFindById = require('./persistenceTests/testFindById').test;
 var testFilter = require('./persistenceTests/testFilter').test;
 var testDeleteById = require('./persistenceTests/testDeleteById').test;
@@ -92,7 +92,6 @@ assert.steps("Redis test suite",[
         })
     },
     function(next){
-
         testUpdateObject(persistence,objects,function(testWasSuccessful){
             testWasSuccessful();
             next();
@@ -128,3 +127,4 @@ assert.steps("Redis test suite",[
 
 
 
+z

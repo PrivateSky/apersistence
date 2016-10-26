@@ -8,7 +8,6 @@ var modelUtil = require("../../lib/ModelDescription.js");
 var mysqlUtils = require("./mysqlUtils.js");
 
 function sqlPersistenceStrategy(mysql_connection) {
-
     var self = this;
     var runQuery = Q.nbind(mysql_connection.query,mysql_connection);
 
@@ -25,9 +24,9 @@ function sqlPersistenceStrategy(mysql_connection) {
             tableStructure[0].forEach(function(column){
                 column['Type'] = column['Type'].split('(')[0];   //ignore size specifications such as INT(10)
             });
+
             model.persistentProperties.some(function(modelProperty){
                 var expectedDbType = self.getDatabaseType(model.getFieldType(modelProperty));
-
 
                 if(expectedDbType === undefined){
                     validModel = false;
@@ -54,7 +53,6 @@ function sqlPersistenceStrategy(mysql_connection) {
                                 validProperty = false;
                             }
                         }
-
                         return true; // arry.some(callback) breaks when the callback returns true
                     }
                 });
@@ -67,42 +65,42 @@ function sqlPersistenceStrategy(mysql_connection) {
             return validModel;
         }
 
+        function createTable(){
+            return mysqlUtils.createTable(mysql_connection,self,typeName,description);
+        }
+
         runQuery(createValidatindQuery()).
-        then(validate).
+        then(validate,createTable).
         then(function(isValid){callback(null,isValid)}).
         catch(callback);
     };
 
     this.findById = function (typeName, id, callback) {
-        self.getObject(typeName,id,function(err,o){
-            if (self.isFresh(o)) {
-                callback(null, null);
-            }
-            else {
-                callback(null, o);
-            }
-        })
+        self.getObject(typeName,id,callback);
     };
 
     this.getObject = function (typeName, id, callback) {
+
         function createQuery(){
-            return 'SELECT * from ' + typeName + ' WHERE ' + modelUtil.getPKField(typeName) + " = " + id;
+            var query = 'SELECT * from ' + typeName + ' WHERE ' + modelUtil.getPKField(typeName) + " = " + id+";";
+            return query
         }
         function createObjectFromQueryResult(result){
-
             var retObj = createRawObject(typeName, id);
-            if (result[0][0]) {
+            if (result[0].length>0) {
                 modelUtil.load(retObj, result[0][0], self);
             }
             return retObj;
-        };
+        }
 
         runQuery(createQuery()).
         then(createObjectFromQueryResult).
         then(function(retObj){
             self.cache[id] = retObj;
             callback(null,retObj);}).
-        catch(callback);
+        catch(function(err){
+            callback(err);
+        });
     };
 
     this.updateFields = function(obj,fields,values,callback){
@@ -127,9 +125,6 @@ function sqlPersistenceStrategy(mysql_connection) {
             query+="WHERE "+modelUtil.getPKField(typeName)+"="+self.getConverterTo(pkFieldType)(obj.__meta.getPK())+";";
             return query;
         }
-
-
-
 
         var query;
         if(obj.__meta.savedValues.hasOwnProperty(obj.__meta.getPKField()))
@@ -179,10 +174,9 @@ function sqlPersistenceStrategy(mysql_connection) {
         then(createObjectsFromData).
         then(function(objectsArray){callback(null,objectsArray);}).
         catch(callback);
-    }
+    };
 
     this.deleteObject = function(typeName,id,callback){
-
         var query = "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = '"+id+"';";
         runQuery(query).
         then(function(result){
@@ -193,28 +187,10 @@ function sqlPersistenceStrategy(mysql_connection) {
             callback(err);
         });
     }
-
-    /*
-    function addPropertyToType(typeName,propertyName,propertyType){
-
-        function createAlteringQuery() {
-            return "ALTER TABLE " + typeName + " ADD " + propertyName + " " + self.getConverterFrom(propertyType);
-        }
-        function updateInternalState(){
-            modelUtil[typeName].persistentProperties.push(propertyName);
-            console.log('Property '+propertyName+' added to '+typeName);
-        }
-
-        return startTransaction().
-            then(createAlteringQuery).
-            then(runQuery).
-            then(commitTransaction).
-            then(updateInternalState).
-            catch(treatTransactionError)
-    }*/
 }
 
 sqlPersistenceStrategy.prototype = require('../../lib/BasicStrategy.js').createBasicStrategy();
+
 
 exports.createMySqlStrategy = function (mysqlConnection){
     return new sqlPersistenceStrategy(mysqlConnection);

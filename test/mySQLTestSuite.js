@@ -14,15 +14,17 @@ var mysql      = require('mysql');
 var mysqlConnection = mysql.createConnection({
     host     : 'localhost',
     user     : 'root',
-    password : 'swarm',
-    database : 'twitter_data'
+    password : 'operando',
+    database : 'operando'
 });
+
 
 var rawData = [
         {id: "2", name: "Dana", location: "Tecuci",sex:true},
         {id: "3", name: "Dan", location: "Iasi",sex:false},
         {id: "4", name: "Ana", location: "Bucuresti",sex:true},
         {id: "5", name: "Ion", location: "Iasi",sex:false}];
+
 var model = {
     id: {
         type:'int',
@@ -44,6 +46,7 @@ var model = {
         default:true
     }
 };
+
 var persistence = apersistence.createMySqlPersistence(mysqlConnection);
 var modelName = "Testy";
 var objects;
@@ -55,9 +58,12 @@ var testDeleteById = require('./persistenceTests/testDeleteById').test;
 var testSaveNewObject = require('./persistenceTests/testSaveNewObject').test;
 var testUpdateObject = require('./persistenceTests/testUpdateObject').test;
 
-assert.steps("Mysql test suite",[
-    function(next) {
 
+
+
+assert.steps("Mysql test suite",[
+    
+    function(next) {
         mysqlConnection.connect();
         mysqlUtils.createNewTable(mysqlConnection,persistence, modelName, model).
         then(next).
@@ -85,7 +91,7 @@ assert.steps("Mysql test suite",[
         var invalidIds = [7,10];
         var ids = rawData.map(function(object){
             return object.id;
-        })
+        });
 
         testFindById(persistence,modelName,ids,invalidIds,function(testWasSuccessful){
             testWasSuccessful();
@@ -101,7 +107,6 @@ assert.steps("Mysql test suite",[
             testWasSuccessfull();
             next();
         })
-
     },
     function(next){
 

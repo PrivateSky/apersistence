@@ -19,7 +19,7 @@ exports.test = function(persistence,typeName,ids,onSuccess){
                     next();
                 }
             })
-        })
+        });
 
         functions.push(function(next){
             persistence.findById(typeName,id,function(err,result){
@@ -31,11 +31,11 @@ exports.test = function(persistence,typeName,ids,onSuccess){
                 }
             })
         })
+    });
 
-    })
     functions.push(function(next){
         onSuccess(next);
-    })
+    });
 
     assert.steps('Test DeleteById',functions);
 }
