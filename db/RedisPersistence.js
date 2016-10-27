@@ -26,6 +26,7 @@ function RedisPersistenceStrategy(redisConnection){
     this.getObject = function(typeName, id, callback){
         var obj = redisConnection.hget.jasync(mkKey(typeName), id);
         (function(obj){
+
             var retObj = createRawObject(typeName, id);
             if(obj){
                 modelUtil.load(retObj, obj, self);
@@ -67,7 +68,7 @@ function RedisPersistenceStrategy(redisConnection){
                 });
             }
         });
-    };
+    }
 
     this.deleteObject = function(typeName, id,callback){
         if(this.cache.hasOwnProperty(id)) {
@@ -93,24 +94,20 @@ function RedisPersistenceStrategy(redisConnection){
     }
 
     function filterArray(typeName, arr, filter, callback){
-        var res = arr.filter(function(o) {
-            for (var k in filter) {
-                if (o[k] !== filter[k])
-                    return false;
+        var res = [];
+        arr.forEach(function(o){
+            for(var k in filter){
+                if(o[k] != filter[k]) return;
             }
-            return true;
-        }).map(function(o){
-                 var retObj = createRawObject(typeName);
-                 modelUtil.load(retObj, o, self);
-                 return retObj;
-        })
-        
+            var retObj = createRawObject(typeName);
+            modelUtil.load(retObj, o, self);
+            res.push(retObj);
+        });
         callback(null, res);
     }
 
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKey = mkIndexKey(typeName, indexName, value);
-        console.log("\n\n\n\nRET:",idxKey);
 
         var ret = redisConnection.hgetall.async(idxKey);
         (function(ret){
@@ -130,7 +127,6 @@ function RedisPersistenceStrategy(redisConnection){
         var stringValue = JSON.stringify(serInnerVal);
         var updatesReady = [];
         var qHset = q.nbind(redisConnection.hset,redisConnection);
-
         indexes.forEach(function(i){
             var idxKey = mkIndexKey(typeName, i, obj[i]);
             updatesReady.push(qHset(idxKey, pkValue, stringValue));
@@ -149,6 +145,7 @@ function RedisPersistenceStrategy(redisConnection){
         var pkValue      = id;
 
         function cleanAll(obj,callback){
+
             var qHdel = q.nbind(redisConnection.hdel,redisConnection);
             var deletionsReady = [];
             indexes.map(function(i){
@@ -181,6 +178,7 @@ function RedisPersistenceStrategy(redisConnection){
     this.filter = function(typeName, filter, callback){
         var indexes = modelUtil.getIndexes(typeName);
         var foundIndex = null;
+
         if(!filter){
             returnAllObjects(typeName, callback);
             return ;
@@ -192,13 +190,14 @@ function RedisPersistenceStrategy(redisConnection){
                 break;
             }
         }
-
         if(foundIndex){
             returnIndexPart(typeName, foundIndex, filter[foundIndex], function(err,res){
                 filterArray(typeName, res, filter, callback);
             });
         } else {
-            callback(new Error("Please add at least one index in your model to match at least one criteria from this filter:" + JSON.stringify(filter)));
+            returnAllObjects(typeName, function(err,res){
+                filterArray(typeName, res, filter, callback);
+            });
         }
     }
 
