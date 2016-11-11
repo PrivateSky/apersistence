@@ -16,27 +16,21 @@ exports.test = function(persistence,typeName,ids,onSuccess){
                 if (err) {
                     console.log(err.stack);
                 } else {
-                    next();
+                    persistence.findById(typeName,id,function(err,result){
+                        if(err){
+                            console.log(err.stack);
+                        }else{
+                            assert.isNull(result);
+                            next();
+                        }
+                    });
                 }
             })
         });
-
-        functions.push(function(next){
-            persistence.findById(typeName,id,function(err,result){
-                if(err){
-                    console.log(err.stack);
-                }else{
-                    assert.isNull(result);
-                    next();
-                }
-            })
-        })
     });
-
     functions.push(function(next){
         onSuccess(next);
     });
-
     assert.steps('Test DeleteById',functions);
 }
 

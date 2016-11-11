@@ -18,7 +18,17 @@ exports.test = function(persistence,filterTests,onSuccess){
                 if(err){
                     throw(err);
                 }
-                assert.arraysMatch(results,filterTest.expectedResults,'Filter test '+filterTest+" did not produce the expected output");
+
+                var match = true;
+                for(var field in filterTest.filter){
+                    results.forEach(function(result){
+                        if(result[field]!==filterTest.filter[field]){
+                            match = false;
+                        }
+                    })
+                }
+                assert.equal(true,match,"The results do not match the filters");
+
                 next();
             })
         })
@@ -31,6 +41,13 @@ exports.test = function(persistence,filterTests,onSuccess){
     assert.steps("Test filter",testFunctions);
 }
 
-
+function expectedObject(expectedObject,resultObject){
+    for(var field in expectedObject){
+        if(resultObject[field] !== expectedObject[field]){
+            return false;
+        }
+    }
+    return true;
+}
 
 

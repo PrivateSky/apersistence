@@ -24,16 +24,17 @@ function RedisPersistenceStrategy(redisConnection){
     }
 
     this.getObject = function(typeName, id, callback){
-        var obj = redisConnection.hget.jasync(mkKey(typeName), id);
-        (function(obj){
-
+        redisConnection.hget(mkKey(typeName), id,function(err,obj){
+            if(err){
+                callback(err);
+            }
             var retObj = createRawObject(typeName, id);
-            if(obj){
-                modelUtil.load(retObj, obj, self);
+            if(obj) {
+                modelUtil.load(retObj, JSON.parse(obj), self);
             }
             self.cache[id] = retObj;
             callback(null, retObj);
-        }).wait(obj);
+        });
     };
 
     this.findById = function(typeName, id, callback){
@@ -48,8 +49,9 @@ function RedisPersistenceStrategy(redisConnection){
 
     this.updateFields =  function(obj,  fields, values, callback){
         var typeName = obj.__meta.typeName;
-        deleteFromIndexes(typeName, obj, function(err,res) {
 
+        deleteFromIndexes(typeName, obj, function(err,res) {
+            
             if(err){
                 console.log("Error after delete");
                 callback(err);
@@ -73,7 +75,7 @@ function RedisPersistenceStrategy(redisConnection){
     };
 
     this.deleteObject = function(typeName, id,callback){
-        if(this.cache.hasOwnProperty(id)) {
+        if(self.cache[id]) {
             deleteFromIndexes(typeName, self.cache[id], function(err,result){
                 delete self.cache[id];
                 delete result.__meta.savedValues;
@@ -81,7 +83,7 @@ function RedisPersistenceStrategy(redisConnection){
             });
         }
         else{
-            this.getObject(typeName,id,function(err,obj){
+            self.getObject(typeName,id,function(err,obj){
                 if(err){
                     callback(err,null);
                 }else {
@@ -149,7 +151,6 @@ function RedisPersistenceStrategy(redisConnection){
         var errs = [];
         indexes.forEach(function(index){
             var idxKey = mkIndexKey(typeName,index,obj.__meta.savedValues[index]);
-            console.log("Deleting from ",idxKey, " key ",pk);
             redisConnection.hdel(idxKey,pk,function(err,res){
                 if(err){
                     errs.push(err);
@@ -159,38 +160,17 @@ function RedisPersistenceStrategy(redisConnection){
                     if(errs.length>0){
                         callback(new Error("Errors occured during the deleting phase of the update"));
                     }else{
-                        callback(undefined,obj);
+                        redisConnection.hdel(mkKey(typeName),pk,function(err,done){
+                            if(err){
+                                callback(err);
+                            }else{
+                                callback(undefined,obj);
+                            }
+                        })
                     }
                 }
             })
         });
-
-        /*
-        if(obj === undefined){
-            obj = self.getObject.async(typeName, id);
-            (function(obj){
-                cleanAll(obj,callback);
-            }).wait(obj)
-        } else {
-            cleanAll(obj,callback);
-        }*/
-
-
-        function cleanAll(obj,callback){
-            var qHdel = q.nbind(redisConnection.hdel,redisConnection);
-            var deletionsReady = [];
-            indexes.map(function(i){
-                var idxKey = mkIndexKey(typeName, i, obj[i]);
-                deletionsReady.push(qHdel(idxKey, pkValue));
-            });
-
-            var idxKey = mkKey(typeName);
-            deletionsReady.push(qHdel(idxKey, pkValue));
-
-            q.all(deletionsReady).
-            then(function(res){callback(null,obj);}).
-            catch(callback);
-        }
     }
 
     function returnAllObjects(typeName, callback){

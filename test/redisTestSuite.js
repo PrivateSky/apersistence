@@ -12,7 +12,7 @@ var persistence = apersistence.createRedisPersistence(redisConnection);
 
 var rawData = [
     {id: "2", name: "Dana", location: "Tecuci",sex:true},
-    {id: "3", name: "Anu", location: "Iasi",sex:false},
+    {id: "3", name: "Ana", location: "Iasi",sex:false},
     {id: "4", name: "Ana", location: "Bucuresti",sex:true},
     {id: "5", name: "Ion", location: "Iasi",sex:false}
 ];
@@ -67,11 +67,10 @@ assert.steps("Redis test suite",[
         })
     },
     function(next){
-
         var invalidIds = [7,10];
         var ids = rawData.map(function(object){
             return object.id;
-        })
+        });
 
         testFindById(persistence,modelName,ids,invalidIds,function(testWasSuccessful){
             testWasSuccessful();
@@ -84,7 +83,7 @@ assert.steps("Redis test suite",[
                 modelName:modelName,
                 filter:{name:"Ana"},
                 expectedResults: [{id: "4", name: "Ana", location: "Bucuresti",sex:true},
-                                    {id: "3", name: "Anu", location: "Iasi",sex:false}]}
+                                    {id: "3", name: "Ana", location: "Iasi",sex:false}]}
         ];
 
         testFilter(persistence,filterTests,function(testWasSuccessfull){

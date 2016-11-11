@@ -26,9 +26,7 @@ exports.test = function(persistence,objects,onSuccess){
          testFunctions.push(function(next){
              persistence.findById(objectToBeSaved.__meta.typeName,objectToBeSaved.__meta.getPK(),function(err,result){
                  assert.isNull(err,"Error "+err+" appeared while testing that object was saved");
-                 console.log("\n\n\n",result,"\n\n\n",objectToBeSaved,"\n\n\n")
                  assert.objectHasFields(result.__meta.savedValues,objectToBeSaved.__meta.savedValues,'Object with id '+objectToBeSaved.__meta.getPK()+' was not saved properly');
-
                  next();
              })
          })
