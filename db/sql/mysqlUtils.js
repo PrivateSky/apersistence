@@ -11,14 +11,21 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
 
     for(field in model){
         query+=field+' ';
-
-
         var dbType = persistence.getDatabaseType(model[field].type);
         if(dbType === 'varchar'){
-            dbType+='(30) ';
+            if(model['field']['length']){
+                dbType += '('+model['field']['length']+') ';
+            }else {
+                dbType += '(30) ';
+            }
         }
+
         if(dbType === 'int'){
-            dbType+='(10)';
+            if(model['field']['length']){
+                dbType += '('+model['field']['length']+') ';
+            }else {
+                dbType += '(10) ';
+            }
         }
         query+=dbType;
         if(field.hasOwnProperty('default')){
