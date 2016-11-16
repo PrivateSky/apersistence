@@ -13,16 +13,16 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
         query+=field+' ';
         var dbType = persistence.getDatabaseType(model[field].type);
         if(dbType === 'varchar'){
-            if(model['field']['length']){
-                dbType += '('+model['field']['length']+') ';
+            if(model.field.length){
+                dbType += '('+model.field.length+') ';
             }else {
                 dbType += '(30) ';
             }
         }
 
         if(dbType === 'int'){
-            if(model['field']['length']){
-                dbType += '('+model['field']['length']+') ';
+            if(model.field.length){
+                dbType += '('+model.field.length+') ';
             }else {
                 dbType += '(10) ';
             }
