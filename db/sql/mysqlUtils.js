@@ -14,7 +14,7 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
         var dbType = persistence.getDatabaseType(model[field].type);
         if(dbType === 'varchar'){
             if(model[field]['length']){
-                dbType += '('+model.field.length+') ';
+                dbType += '('+model[field]['length']+') ';
             }else {
                 dbType += '(30) ';
             }
@@ -22,7 +22,7 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
 
         if(dbType === 'int'){
             if(model[field]['length']){
-                dbType += '('+model.field.length+') ';
+                dbType += '('+model[field]['length']+') ';
             }else {
                 dbType += '(10) ';
             }
