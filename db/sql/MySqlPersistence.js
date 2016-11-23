@@ -7,17 +7,18 @@ var createRawObject = require("../../lib/abstractPersistence.js").createRawObjec
 var modelUtil = require("../../lib/ModelDescription.js");
 var mysqlUtils = require("./mysqlUtils.js");
 
-function sqlPersistenceStrategy(mysql_connection) {
+function sqlPersistenceStrategy(mysqlPool) {
     var self = this;
-    var runQuery = Q.nbind(mysql_connection.query,mysql_connection);
+    var runQuery = Q.nbind(mysqlPool.query,mysqlPool);
+
 
     this.validateModel = function(typeName,description,callback){
-        function createValidatindQuery(){
-            return "DESCRIBE "+typeName;
-        }
+        runQuery(mysqlUtils.describeTable(typeName)).
+        then(validate,createTable).
+        then(function(isValid){callback(null,isValid)}).
+        catch(callback);
 
         function validate(tableStructure){
-
             var validModel = true;
             var model = new modelUtil.ModelDescription(typeName,description,self);
 
@@ -34,11 +35,10 @@ function sqlPersistenceStrategy(mysql_connection) {
                 }
 
                 var validProperty = false;
-                var dbType;
                 tableStructure[0].some(function(column){
                     if(column['Field'] === modelProperty){
-                       validProperty = true;
-                       var dbType = column['Type'];
+                        validProperty = true;
+                        var dbType = column['Type'];
 
                         if(dbType.indexOf(')')!==-1){
                             dbType = dbType.slice(dbType.indexOf('('));
@@ -66,34 +66,27 @@ function sqlPersistenceStrategy(mysql_connection) {
         }
 
         function createTable(){
-            return mysqlUtils.createTable(mysql_connection,self,typeName,description);
+            return runQuery(mysqlUtils.createTable(self,typeName,description));
         }
 
-        runQuery(createValidatindQuery()).
-        then(validate,createTable).
-        then(function(isValid){callback(null,isValid)}).
-        catch(callback);
     };
 
     this.findById = function (typeName, id, callback) {
-        self.getObject(typeName,id,callback);
+        self.getObject(typeName,id,function(err,obj){
+            if(err){
+                callback(err);
+            }else{
+                if(obj.__meta.freshRawObject===true){
+                    callback(null,null);
+                }else{
+                    callback(undefined,obj);
+                }
+            }
+        });
     };
 
     this.getObject = function (typeName, id, callback) {
-
-        function createQuery(){
-            var query = 'SELECT * from ' + typeName + ' WHERE ' + modelUtil.getPKField(typeName) + " = " + id+";";
-            return query
-        }
-        function createObjectFromQueryResult(result){
-            var retObj = createRawObject(typeName, id);
-            if (result[0].length>0) {
-                modelUtil.load(retObj, result[0][0], self);
-            }
-            return retObj;
-        }
-
-        runQuery(createQuery()).
+        runQuery(mysqlUtils.find(typeName,modelUtil.getPKField(typeName),id)).
         then(createObjectFromQueryResult).
         then(function(retObj){
             self.cache[id] = retObj;
@@ -101,41 +94,32 @@ function sqlPersistenceStrategy(mysql_connection) {
         catch(function(err){
             callback(err);
         });
+
+        function createObjectFromQueryResult(result){
+            var retObj = createRawObject(typeName, id);
+            if (result[0].length>0) {
+                modelUtil.load(retObj, result[0][0], self);
+            }
+            return retObj;
+        }
     };
 
     this.updateFields = function(obj,fields,values,callback){
-
         var typeName = obj.__meta.typeName;
         var id = obj.__meta.getPK();
         var model = modelUtil.getModel(typeName);
 
-        function createUpdateQuery() {
-            var query = 'UPDATE '+typeName+ " SET ";
-            var length = fields.length;
-
-
-            fields.forEach(function(field,index) {
-                var update = field+"=" +values[index];
-                update += (index == length-1) ? " " : ", ";
-                query +=update;
-            });
-
-            var pkFieldType = model.getFieldType(modelUtil.getPKField(typeName));
-
-            query+="WHERE "+modelUtil.getPKField(typeName)+"="+self.getConverterTo(pkFieldType)(obj.__meta.getPK())+";";
-            return query;
-        }
-
         var query;
         if(obj.__meta.savedValues.hasOwnProperty(obj.__meta.getPKField()))
-            query = createUpdateQuery();
+            query = mysqlUtils.update(typeName,model.getPKField(),id,fields,values);
         else{
             var data = {};
             fields.forEach(function(field,index){
                 data[field] = values[index];
             })
-            query = mysqlUtils.insertRow(mysql_connection,self,typeName,data,modelUtil.getModel(typeName));
+            query = mysqlUtils.insertRow(typeName,data);
         }
+
         runQuery(query).
             then(function(updatedObject){
                 self.cache[id] = updatedObject;
@@ -144,21 +128,6 @@ function sqlPersistenceStrategy(mysql_connection) {
     }
 
     this.filter = function(typeName,filter,callback){
-        function createFilterQuery(typeName,filter){
-            var query = "SELECT * from "+typeName+" ";
-
-            if(filter == undefined){
-                return query+";";
-            }
-            query +="WHERE ";
-            for(var field in filter){
-                query += field + "="+filter[field]+" AND ";
-            }
-            query = query.slice(0,-4);
-            query+=";";
-            return query;
-        }
-
         function createObjectsFromData(queryResponse){
             var results = queryResponse[0];
             var objects = [];
@@ -169,15 +138,14 @@ function sqlPersistenceStrategy(mysql_connection) {
             })
             return objects;
         }
-
-        runQuery(createFilterQuery(typeName,filter)).
+        runQuery(mysqlUtils.filter(typeName,filter)).
         then(createObjectsFromData).
         then(function(objectsArray){callback(null,objectsArray);}).
         catch(callback);
     };
 
     this.deleteObject = function(typeName,id,callback){
-        var query = "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = '"+id+"';";
+        var query = mysqlUtils.deleteObject(typeName,id);
         runQuery(query).
         then(function(result){
             delete self.cache[id];

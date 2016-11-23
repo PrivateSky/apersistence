@@ -11,7 +11,7 @@ var assert       = require('double-check').assert;
 var exceptions   = require('double-check').exceptions;
 var modelUtil  = require("../lib/ModelDescription");
 var mysql      = require('mysql');
-var mysqlConnection = mysql.createConnection({
+var mysqlPool = mysql.createPool({
     host     : 'localhost',
     user     : 'root',
     password : 'operando',
@@ -47,10 +47,9 @@ var model = {
     }
 };
 
-var persistence = apersistence.createMySqlPersistence(mysqlConnection);
+var persistence = apersistence.createMySqlPersistence(mysqlPool);
 var modelName = "Testy";
 var objects;
-
 var testModelValidation = require('./persistenceTests/testModelValidation').test;
 var testFindById = require('./persistenceTests/testFindById').test;
 var testFilter = require('./persistenceTests/testFilter').test;
@@ -62,12 +61,14 @@ var testUpdateObject = require('./persistenceTests/testUpdateObject').test;
 
 
 assert.steps("Mysql test suite",[
-    
     function(next) {
-        mysqlConnection.connect();
-        mysqlUtils.createNewTable(mysqlConnection,persistence, modelName, model).
-        then(next).
-        catch(console.error)
+        mysqlPool.query(mysqlUtils.createTable(persistence, modelName, model),function(err,res){
+            if(err){
+                console.log(err);
+            }else{
+                next();
+            }
+        })
     },
     function(next){
         testModelValidation(persistence,modelName,model,function(testWasSuccessfull){
@@ -76,6 +77,16 @@ assert.steps("Mysql test suite",[
         })
     },
     function(next){
+        persistence.registerModel(modelName,model,function(err,result){
+            if(err){
+                console.log(err);
+            }else{
+                next();
+            }
+        })
+    },
+
+    function(next){
         var serializedData = rawData.map(function(row){
             var serial = {};
             for(var field in row)
@@ -83,8 +94,19 @@ assert.steps("Mysql test suite",[
             return serial;
         })
 
-        mysqlUtils.insertDataIntoTable(mysqlConnection,persistence,modelName,serializedData,model).
-            then(next);
+        var done = serializedData.length;
+        serializedData.forEach(function(serializedRow){
+            mysqlPool.query(mysqlUtils.insertRow(modelName,serializedRow),function(err,result){
+                if(err){
+                    console.log(err);
+                }else{
+                    done--;
+                    if(done===0){
+                        next();
+                    }
+                }
+            })
+        })
     },
     function(next){
 
@@ -109,7 +131,6 @@ assert.steps("Mysql test suite",[
         })
     },
     function(next){
-
         objects = rawData.map(function(data){
             return modelUtil.createObjectFromData(modelName,data);
         });
@@ -120,11 +141,10 @@ assert.steps("Mysql test suite",[
         })
     },
     function(next){
-
         var filterTests = [
-            {
+            {  
                 modelName:modelName,
-                filter:{location:"Iasi"},
+                filter:{location:'Iasi'},
                 expectedResults: [{id:"3",name:"Dan",location:"Iasi",sex:false},
                     {id:"5",name:"Ion",location:"Iasi",sex:false}]
             },
@@ -134,24 +154,29 @@ assert.steps("Mysql test suite",[
                 expectedResults: [{id: "4", name: "Ana", location: "Bucuresti",sex:true}]
             }
         ];
-
+        
         testFilter(persistence,filterTests,function(testWasSuccessfull){
             testWasSuccessfull();
             next();
         })
     },
     function(next){
-
         testUpdateObject(persistence,objects,function(testWasSuccessful){
             testWasSuccessful();
             next();
         })
     },
     function(next){
-        mysqlUtils.dropTable(mysqlConnection,modelName).then(next).catch(console.error);
+        mysqlPool.query(mysqlUtils.dropTable(modelName),function(err,result){
+            if(err){
+                console.log(err);
+            }else{
+                next();
+            }
+        });
     },
     function(next){
-        mysqlConnection.end();
+        mysqlPool.end();
         next();
     }
-]);
+],1000);

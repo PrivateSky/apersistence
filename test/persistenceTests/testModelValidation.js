@@ -24,6 +24,8 @@ exports.test = function(persistence,typeName,model,onSuccess){
                 next();
             });
         },
+
+
         function(next){
             var invalidModel = {};
             delete model.someOtherProperty;
@@ -41,11 +43,12 @@ exports.test = function(persistence,typeName,model,onSuccess){
                 next();
             });
         },
+
         function(next){
             delete model.someOtherProperty;
             persistence.registerModel(typeName,model,function(err,resultingModel){
-                assert.equal(err,null);
                 onSuccess(next);
+                assert.equal(err,null);
             })
         }
     ])

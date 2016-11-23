@@ -4,14 +4,14 @@
 
 
 var Q = require('q');
+var modelUtil = require("../../lib/ModelDescription.js");
 
-exports.createTable= function(mysqlConnection,persistence,tableName,model){
-    var runQuery = Q.nbind(mysqlConnection.query,mysqlConnection);
+exports.createTable= function(persistence,tableName,model){
     var query = 'CREATE TABLE IF NOT EXISTS '+tableName+'(';
 
     for(field in model){
         query+=field+' ';
-        var dbType = persistence.getDatabaseType(model[field].type);
+        var dbType = persistence.persistenceStrategy.getDatabaseType(model[field].type);
         if(dbType === 'varchar'){
             if(model[field]['length']){
                 dbType += '('+model[field]['length']+') ';
@@ -38,11 +38,10 @@ exports.createTable= function(mysqlConnection,persistence,tableName,model){
     }
     query = query.slice(0,-1);
     query+=');';
-
-    return runQuery(query);
+    return query;
 };
 
-exports.insertRow = function(mysqlConnection,persistence,tableName,serializedData){
+exports.insertRow = function(tableName,serializedData){
     var query="REPLACE INTO "+tableName+" (";
     for (field in serializedData) {
         query += field + ",";
@@ -53,7 +52,6 @@ exports.insertRow = function(mysqlConnection,persistence,tableName,serializedDat
     for(var field in serializedData){
         query+=' '+serializedData[field]+',';
     }
-
     query = query.slice(0, -1);
     query+=');';
     return query;
@@ -80,10 +78,47 @@ exports.createNewTable = function(mysqlConnection,persistence,tableName,model){
     catch(function(err){console.log(err.stack);});
 };
 
-exports.dropTable =function(mysqlConnection,tableName){
-    var runQuery = Q.nbind(mysqlConnection.query,mysqlConnection);
-    var query = "DROP TABLE IF EXISTS " +tableName+";";
-    return runQuery(query);
+exports.dropTable =function(tableName){
+    return "DROP TABLE IF EXISTS " +tableName+";";
 };
 
+exports.deleteObject = function(typeName,id){
+    return "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = '"+id+"';";
+}
 
+exports.describeTable = function(typeName){
+    return "DESCRIBE "+typeName;
+}
+
+exports.find = function(typeName,pkField,pk){
+    return 'SELECT * from ' + typeName + ' WHERE ' + pkField + " = " + pk+";";
+}
+
+exports.update = function(typeName,pkField,serialisedPk,fields,values){
+
+    var query = 'UPDATE '+typeName+ " SET ";
+    var length = fields.length;
+    fields.forEach(function(field,index) {
+        var update = field+"=" +values[index];
+        update += (index == length-1) ? " " : ", ";
+        query +=update;
+    });
+    query+="WHERE "+pkField+"="+serialisedPk+";";
+
+    return query;
+}
+
+exports.filter = function(typeName,filter){
+    var query = "SELECT * from "+typeName+" ";
+
+    if(filter == undefined){
+        return query+";";
+    }
+    query +="WHERE ";
+    for(var field in filter){
+        query += field + "="+filter[field]+" AND ";
+    }
+    query = query.slice(0,-4);
+    query+=";";
+    return query;
+}

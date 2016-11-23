@@ -11,14 +11,12 @@ var exceptions   = require('double-check').exceptions;
 
 exports.test = function(persistence,filterTests,onSuccess){
     var testFunctions = [];
-
     filterTests.forEach(function(filterTest) {
         testFunctions.push(function (next) {
             persistence.filter(filterTest.modelName, filterTest.filter, function (err, results) {
                 if(err){
                     throw(err);
                 }
-
                 var match = true;
                 for(var field in filterTest.filter){
                     results.forEach(function(result){
