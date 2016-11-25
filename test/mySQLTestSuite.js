@@ -85,7 +85,6 @@ assert.steps("Mysql test suite",[
             }
         })
     },
-
     function(next){
         var serializedData = rawData.map(function(row){
             var serial = {};
