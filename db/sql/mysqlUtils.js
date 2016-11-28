@@ -6,12 +6,12 @@
 var Q = require('q');
 var modelUtil = require("../../lib/ModelDescription.js");
 
-exports.createTable= function(persistence,tableName,model){
+exports.createTable= function(persistenceStrategy,tableName,model){
     var query = 'CREATE TABLE IF NOT EXISTS '+tableName+'(';
-
     for(field in model){
         query+=field+' ';
-        var dbType = persistence.persistenceStrategy.getDatabaseType(model[field].type);
+        var type = model[field].type;
+        var dbType = persistenceStrategy.getDatabaseType(type);
         if(dbType === 'varchar'){
             if(model[field]['length']){
                 dbType += '('+model[field]['length']+') ';
