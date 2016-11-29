@@ -35,7 +35,7 @@ var model = {
         type:'string',
         default:0,
         index:true,
-        maxSize:140
+        length:140
     },
     location: {
         type:'string',
@@ -62,7 +62,7 @@ var testUpdateObject = require('./persistenceTests/testUpdateObject').test;
 
 assert.steps("Mysql test suite",[
     function(next) {
-        mysqlPool.query(mysqlUtils.createTable(persistence, modelName, model),function(err,res){
+        mysqlPool.query(mysqlUtils.createTable(persistence.persistenceStrategy, modelName, model),function(err,res){
             if(err){
                 console.log(err);
             }else{
