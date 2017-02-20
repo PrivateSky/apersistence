@@ -14,6 +14,7 @@ function RedisPersistenceStrategy(redisConnection){
 
     var ALL_INDEX = "specialIndex";
     var self = this;
+    this.redisConnection = redisConnection;
 
     function mkKey(typeName){
         return "IndexSpace:" + typeName + ":" + ALL_INDEX + ":" + "all";
@@ -112,22 +113,24 @@ function RedisPersistenceStrategy(redisConnection){
 
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKey = mkIndexKey(typeName, indexName, value);
-
-        var ret = redisConnection.hgetall.async(idxKey);
-        (function(ret){
-            var arr = [];
-            for(var v in ret){
-                arr.push(JSON.parse(ret[v]));
+        redisConnection.hgetall(idxKey,function(err,ret){
+            if(err){
+                callback(err);
+            }else{
+                var arr = [];
+                for(var v in ret){
+                    arr.push(JSON.parse(ret[v]));
+                }
+                callback(null, arr);
             }
-            callback(null, arr);
-        }).wait(ret);
+
+        })
     }
 
     function updateAllIndexes(typeName, obj,callback){
         var indexes      = modelUtil.getIndexes(typeName);
         var pkValue      = obj.__meta.getPK();
-        var innerVal = modelUtil.getInnerValues(obj,self);
-        var serInnerVal = modelUtil.serialiseObjectValues(typeName,innerVal,self);
+        var serInnerVal = modelUtil.getInnerValues(obj,self);
         var stringValue = JSON.stringify(serInnerVal);
         var updatesReady = [];
         var qHset = q.nbind(redisConnection.hset,redisConnection);
@@ -192,13 +195,22 @@ function RedisPersistenceStrategy(redisConnection){
                 break;
             }
         }
+
         if(foundIndex){
             returnIndexPart(typeName, foundIndex, filter[foundIndex], function(err,res){
-                filterArray(typeName, res, filter, callback);
+                if(err){
+                    callback(err);
+                }else {
+                    filterArray(typeName, res, filter, callback);
+                }
             });
         } else {
             returnAllObjects(typeName, function(err,res){
-                filterArray(typeName, res, filter, callback);
+                if(err){
+                    callback(err);
+                }else {
+                    filterArray(typeName, res, filter, callback);
+                }
             });
         }
     }
