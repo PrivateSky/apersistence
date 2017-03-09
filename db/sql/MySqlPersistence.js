@@ -86,7 +86,8 @@ function sqlPersistenceStrategy(mysqlPool) {
     };
 
     this.getObject = function (typeName, id, callback) {
-        runQuery(mysqlUtils.find(typeName,modelUtil.getPKField(typeName),id)).
+        var query =mysqlUtils.find(typeName,modelUtil.getPKField(typeName),id);
+        runQuery(query).
         then(createObjectFromQueryResult).
         then(function(retObj){
             self.cache[id] = retObj;
@@ -106,12 +107,15 @@ function sqlPersistenceStrategy(mysqlPool) {
 
     this.updateFields = function(obj,fields,values,callback){
         var typeName = obj.__meta.typeName;
-        var id = obj.__meta.getPK();
+        var pkName = obj.__meta.getPKField();
+        var id = obj.__meta.getPK()
+        var serialised_id = modelUtil.serialiseField(typeName,pkName,id,self);
+
         var model = modelUtil.getModel(typeName);
 
         var query;
         if(obj.__meta.savedValues.hasOwnProperty(obj.__meta.getPKField()))
-            query = mysqlUtils.update(typeName,model.getPKField(),id,fields,values);
+            query = mysqlUtils.update(typeName,model.getPKField(),serialised_id,fields,values);
         else{
             var data = {};
             fields.forEach(function(field,index){
@@ -119,7 +123,6 @@ function sqlPersistenceStrategy(mysqlPool) {
             })
             query = mysqlUtils.insertRow(typeName,data);
         }
-
         runQuery(query).
             then(function(updatedObject){
                 self.cache[id] = updatedObject;
