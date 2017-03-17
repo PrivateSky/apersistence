@@ -19,6 +19,7 @@ function sqlPersistenceStrategy(mysqlPool) {
         catch(callback);
 
         function validate(tableStructure){
+
             var validModel = true;
             var model = new modelUtil.ModelDescription(typeName,description,self);
 
@@ -86,29 +87,25 @@ function sqlPersistenceStrategy(mysqlPool) {
     };
 
     this.getObject = function (typeName, id, callback) {
-        var query =mysqlUtils.find(typeName,modelUtil.getPKField(typeName),id);
-        runQuery(query).
-        then(createObjectFromQueryResult).
-        then(function(retObj){
-            self.cache[id] = retObj;
-            callback(null,retObj);}).
-        catch(function(err){
-            callback(err);
-        });
-
-        function createObjectFromQueryResult(result){
-            var retObj = createRawObject(typeName, id);
-            if (result[0].length>0) {
-                modelUtil.load(retObj, result[0][0], self);
+        var query = mysqlUtils.find(typeName,modelUtil.getPKField(typeName),id);
+        mysqlPool.query(query,function(err,result){
+            if(err){
+                callback(err);
+            }else{
+                var retObj = createRawObject(typeName, id);
+                if (result.length>0) {
+                    modelUtil.load(retObj, result[0], self);
+                }
+                self.cache[id] = retObj;
+                callback(null,retObj);
             }
-            return retObj;
-        }
+        })
     };
 
     this.updateFields = function(obj,fields,values,callback){
         var typeName = obj.__meta.typeName;
         var pkName = obj.__meta.getPKField();
-        var id = obj.__meta.getPK()
+        var id = obj.__meta.getPK();
         var serialised_id = modelUtil.serialiseField(typeName,pkName,id,self);
 
         var model = modelUtil.getModel(typeName);
@@ -123,12 +120,16 @@ function sqlPersistenceStrategy(mysqlPool) {
             })
             query = mysqlUtils.insertRow(typeName,data);
         }
-        runQuery(query).
-            then(function(updatedObject){
-                self.cache[id] = updatedObject;
-                callback(null,updatedObject);}).
-            catch(callback);
-    }
+
+        mysqlPool.query(query,function(err,result){
+            if(err){
+                callback(err);
+            }else{
+                self.cache[id] = obj;
+                callback(null,obj);
+            }
+        });
+    };
 
     this.filter = function(typeName,filter,callback){
         function createObjectsFromData(queryResponse){

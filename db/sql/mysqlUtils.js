@@ -31,19 +31,22 @@ exports.createTable= function(persistenceStrategy,tableName,model){
         if(field.hasOwnProperty('default')){
             query+=' DEFAULT'+field.default;
         }
-        if(field.pk === true){
-            query+=', PRIMARY KEY ('+field+')';
-        }
         query+=',';
     }
-    query = query.slice(0,-1);
+    for(field in model) {
+        if (model[field].pk === true) {
+            query += ' PRIMARY KEY (' + field + '),';
+        }
+    }
+
+        query = query.slice(0,-1);
     query+=');';
     return query;
 };
 
 exports.insertRow = function(tableName,serializedData){
     var query="REPLACE INTO "+tableName+" (";
-    for (field in serializedData) {
+    for (field in serializedData){
         query += field + ",";
     }
     query = query.slice(0, -1);

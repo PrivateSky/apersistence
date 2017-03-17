@@ -23,7 +23,8 @@ var rawData = [
         {id: "2", name: "Dana", location: "Tecuci",sex:true},
         {id: "3", name: "Dan", location: "Iasi",sex:false},
         {id: "4", name: "Ana", location: "Bucuresti",sex:true},
-        {id: "5", name: "Ion", location: "Iasi",sex:false}];
+        {id: "5", name: "Ion", location: "Iasi",sex:false}
+];
 
 var model = {
     id: {
