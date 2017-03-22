@@ -32,18 +32,18 @@ assert.callback("Array of primitive types test",function(end){
     persistence.registerModel("TestUser",userModel,function(err,result) {
         var user = apersistence.createRawObject("TestUser", "Johnny Smith");
         user.grades = [2,3];
-
         persistence.save(user, function (err, user) {
             persistence.findById("TestUser", "Johnny Smith", function (err, user) {
-                assert.equal(user.grades.length,2);
-                assert.equal(user.grades[0],2);
-                assert.equal(user.grades[1],3);
-                mysqlPool.query("DROP TABLE TestUser",function(err,result){
+                assert.equal(user.grades.length, 2);
+                assert.equal(user.grades[0], 2);
+                assert.equal(user.grades[1], 3);
+                mysqlPool.query("DROP TABLE TestUser", function (err, result) {
                     mysqlPool.end();
                 });
 
                 end();
             })
-        })
+        })    
+        
     })
 });

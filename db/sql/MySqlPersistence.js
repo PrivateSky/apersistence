@@ -11,7 +11,6 @@ function sqlPersistenceStrategy(mysqlPool) {
     var self = this;
     var runQuery = Q.nbind(mysqlPool.query,mysqlPool);
 
-
     this.validateModel = function(typeName,description,callback){
         runQuery(mysqlUtils.describeTable(typeName)).
         then(validate,createTable).

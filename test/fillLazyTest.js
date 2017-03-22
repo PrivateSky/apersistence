@@ -21,13 +21,21 @@ var userModel = {
         type:'string',
         default:"Mircea Cartarescu"
     },
+    bookName1:{
+        "type":"string",
+        "default":"War and Peace"
+    },
+    bookName2:{
+        "type":"string",
+        "default":"War and Peace"
+    },
     book1:{
         type:"TestBook",
-        default:"First book"
+        relation:"bookName1:name"
     },
     book2:{
         type:"TestBook",
-        default:"Second book"
+        relation:"bookName2:name"
     }
 };
 var bookModel = {
@@ -36,11 +44,14 @@ var bookModel = {
         type:'string'
     }
 };
+
+
 var persistence = apersistence.createMySqlPersistence(mysqlPool);
 function storeSomeBooks(callback){
     var book1 = apersistence.createRawObject("TestBook","Shogun");
     var book2 = apersistence.createRawObject("TestBook","War And Peace");
     persistence.save(book1,function(err,result){
+        console.log(arguments);
         if(err){
             callback(err);
         }else {
@@ -56,6 +67,13 @@ function storeSomeBooks(callback){
 }
 
 assert.steps("Load lazy objects test",[
+    function(next){
+        mysqlPool.query("DROP TABLE TestUser", function (err, result) {
+            mysqlPool.query("DROP TABLE TestBook", function (err, result) {
+                next();
+            });
+        });
+    },
     function(next) {
         persistence.registerModel("TestBook", bookModel, function (err, result) {
         });
@@ -64,29 +82,32 @@ assert.steps("Load lazy objects test",[
         })
     },
     function(next){
-        storeSomeBooks(function(err,books) {
+        storeSomeBooks(function (err, books) {
             var user = apersistence.createRawObject("TestUser", "Johnny Smith");
-            user.book1 = books[0];
-            user.book2 = books[1];
-            persistence.save(user, function (err, user) {
-                next()
-            })
+            try {
+                user.book1 = books[0];
+                assert.fail("Should throw error. Cannot set transient properties directly.")
+            } catch (e) {
+                user.bookName1 = "Shogun";
+                persistence.save(user, function (err, user) {
+                    next()
+                })
+            }
         })
     },
     function(next) {
         persistence.findById("TestUser", "Johnny Smith", function (err, user) {
-            assert.equal(user.name, "Johnny Smith");
-            assert.equal(user.book1, "Shogun");
+            assert.equal(user.name, "Johnny Smith","Should retrieve the right user");
             user.__meta.loadLazyFields(function (err, user) {
-                assert.equal(user.book1.name, "Shogun");
-                assert.equal(user.book2.name, "War And Peace");
-                assert.equal(user.book1.__meta !== undefined, true);
+                assert.equal(user.book1.name, "Shogun","Should match the expected data");
+                assert.equal(user.book2.name, "War And Peace","Should match the expected data");
+                assert.equal(user.book1.__meta !== undefined, true,"Should be loaded");
                 mysqlPool.query("DROP TABLE TestUser", function (err, result) {
                     mysqlPool.query("DROP TABLE TestBook", function (err, result) {
                         mysqlPool.end();
+                        next();
                     });
                 });
-                next();
             })
         })
     }]);

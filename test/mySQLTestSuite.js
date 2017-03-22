@@ -49,7 +49,7 @@ var model = {
 };
 
 var persistence = apersistence.createMySqlPersistence(mysqlPool);
-var modelName = "Testy";
+var modelName = "TestUser";
 var objects;
 var testModelValidation = require('./persistenceTests/testModelValidation').test;
 var testFindById = require('./persistenceTests/testFindById').test;
@@ -62,21 +62,6 @@ var testUpdateObject = require('./persistenceTests/testUpdateObject').test;
 
 
 assert.steps("Mysql test suite",[
-    function(next) {
-        mysqlPool.query(mysqlUtils.createTable(persistence.persistenceStrategy, modelName, model),function(err,res){
-            if(err){
-                console.log(err);
-            }else{
-                next();
-            }
-        })
-    },
-    function(next){
-        testModelValidation(persistence,modelName,model,function(testWasSuccessfull){
-            testWasSuccessfull();
-            next();
-        })
-    },
     function(next){
         persistence.registerModel(modelName,model,function(err,result){
             if(err){

@@ -36,7 +36,6 @@ exports.test = function(persistence,objects,onSuccess){
     });
 
     objects.forEach(function(object){
-
         testFunctions.push(function(next){
             persistence.saveObject(object,function(err,result){
                 if(err){
@@ -51,7 +50,7 @@ exports.test = function(persistence,objects,onSuccess){
 
         testFunctions.push(function(next){
             persistence.findById(object.__meta.typeName,object.__meta.getPK(),function(err,result){
-                assert.isNull(err,"Error "+err+" appeared while testing that object was saved");
+                assert.equal(err,undefined,"Error ",err," appeared while testing that object was saved");
                 assert.objectHasFields(result.__meta.savedValues,object.__meta.savedValues,'Object with id '+object.__meta.getPK()+' was not saved properly');
                 next();
             })
