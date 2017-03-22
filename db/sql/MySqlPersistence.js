@@ -71,8 +71,8 @@ function sqlPersistenceStrategy(mysqlPool) {
 
     };
 
-    this.findById = function (typeName, id, callback) {
-        self.getObject(typeName,id,function(err,obj){
+    this.findById = function (typeName, serialized_id, callback) {
+        self.getObject(typeName,serialized_id,function(err,obj){
             if(err){
                 callback(err);
             }else{
@@ -85,17 +85,21 @@ function sqlPersistenceStrategy(mysqlPool) {
         });
     };
 
-    this.getObject = function (typeName, id, callback) {
-        var query = mysqlUtils.find(typeName,modelUtil.getPKField(typeName),id);
+    this.getObject = function (typeName, serialized_id, callback) {
+        var query = mysqlUtils.find(typeName,modelUtil.getPKField(typeName),serialized_id);
         mysqlPool.query(query,function(err,result){
             if(err){
                 callback(err);
             }else{
-                var retObj = createRawObject(typeName, id);
+                var model = modelUtil.getModel(typeName);
+                
+                var deserialized_id = modelUtil.deserialiseField(typeName,model.getPKField(),serialized_id,self)
+                var retObj = createRawObject(typeName, deserialized_id);
                 if (result.length>0) {
                     modelUtil.load(retObj, result[0], self);
                 }
-                self.cache[id] = retObj;
+
+                self.cache[deserialized_id] = retObj;
                 callback(null,retObj);
             }
         })
