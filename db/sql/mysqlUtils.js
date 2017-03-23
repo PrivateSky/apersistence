@@ -45,6 +45,9 @@ exports.createTable= function(persistenceStrategy,tableName,model){
 };
 
 exports.insertRow = function(tableName,serializedData){
+
+    var model = modelUtil.getModel(tableName);
+
     var query="REPLACE INTO "+tableName+" (";
     for (field in serializedData){
         query += field + ",";
@@ -52,11 +55,21 @@ exports.insertRow = function(tableName,serializedData){
     query = query.slice(0, -1);
     query += ") VALUES (";
 
+
+
     for(var field in serializedData){
-        query+=' '+serializedData[field]+',';
+        
+        if(model.getFieldDescription(field).type === 'boolean') {
+            query+=' b\''+serializedData[field]+'\',';
+        }else{
+            query+=' \''+serializedData[field]+'\',';
+        }
+
+
     }
     query = query.slice(0, -1);
     query+=');';
+
     return query;
 };
 
@@ -85,16 +98,17 @@ exports.dropTable =function(tableName){
     return "DROP TABLE IF EXISTS " +tableName+";";
 };
 
-exports.deleteObject = function(typeName,id){
-    return "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = '"+id+"';";
+exports.deleteObject = function(typeName,serialized_id){
+    return "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = \'"+serialized_id+"\';";
 }
 
 exports.describeTable = function(typeName){
     return "DESCRIBE "+typeName;
 }
 
-exports.find = function(typeName,pkField,pk){
-    return 'SELECT * from ' + typeName + ' WHERE ' + pkField + " = " + pk+";";
+exports.find = function(typeName,pkField,serializedPk){
+    var query = 'SELECT * from ' + typeName + ' WHERE ' + pkField + " = \'" + serializedPk+"\';";
+    return query
 }
 
 exports.update = function(typeName,pkField,serialisedPk,fields,values){
@@ -102,11 +116,11 @@ exports.update = function(typeName,pkField,serialisedPk,fields,values){
     var query = 'UPDATE '+typeName+ " SET ";
     var length = fields.length;
     fields.forEach(function(field,index) {
-        var update = field+"=" +values[index];
+        var update = field+"=\'" +values[index]+"\'";
         update += (index == length-1) ? " " : ", ";
         query +=update;
     });
-    query+="WHERE "+pkField+"="+serialisedPk+";";
+    query+="WHERE "+pkField+"=\'"+serialisedPk+"\';";
 
     return query;
 }
@@ -119,7 +133,7 @@ exports.filter = function(typeName,filter){
     }
     query +="WHERE ";
     for(var field in filter){
-        query += field + "="+filter[field]+" AND ";
+        query += field + "=\'"+filter[field]+"\' AND ";
     }
     query = query.slice(0,-4);
     query+=";";

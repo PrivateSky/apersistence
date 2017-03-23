@@ -98,7 +98,6 @@ function sqlPersistenceStrategy(mysqlPool) {
                 if (result.length>0) {
                     modelUtil.load(retObj, result[0], self);
                 }
-
                 self.cache[deserialized_id] = retObj;
                 callback(null,retObj);
             }
