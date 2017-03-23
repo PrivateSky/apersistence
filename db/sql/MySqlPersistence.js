@@ -66,7 +66,12 @@ function sqlPersistenceStrategy(mysqlPool) {
         }
 
         function createTable(){
-            return runQuery(mysqlUtils.createTable(self,typeName,description));
+            var persistentFields = modelUtil.getModel(typeName).persistentProperties;
+            var tableDescription = {}
+            persistentFields.forEach(function(field){
+                tableDescription[field] = description[field];
+            });
+            return runQuery(mysqlUtils.createTable(self,typeName,tableDescription));
         }
 
     };
