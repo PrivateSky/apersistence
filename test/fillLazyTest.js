@@ -51,7 +51,6 @@ function storeSomeBooks(callback){
     var book1 = apersistence.createRawObject("TestBook","Shogun");
     var book2 = apersistence.createRawObject("TestBook","War And Peace");
     persistence.save(book1,function(err,result){
-        console.log(arguments);
         if(err){
             callback(err);
         }else {

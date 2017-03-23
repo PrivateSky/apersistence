@@ -69,7 +69,6 @@ exports.insertRow = function(tableName,serializedData){
     }
     query = query.slice(0, -1);
     query+=');';
-
     return query;
 };
 
@@ -112,14 +111,21 @@ exports.find = function(typeName,pkField,serializedPk){
 }
 
 exports.update = function(typeName,pkField,serialisedPk,fields,values){
+    var model = modelUtil.getModel(typeName);
 
     var query = 'UPDATE '+typeName+ " SET ";
     var length = fields.length;
     fields.forEach(function(field,index) {
-        var update = field+"=\'" +values[index]+"\'";
-        update += (index == length-1) ? " " : ", ";
-        query +=update;
+
+        if(model.getFieldDescription(field).type === "boolean"){
+            query += field+"=b\'" +values[index]+"\',";
+        }else{
+            query += field+"=\'" +values[index]+"\',";
+
+        }
+        
     });
+    query = query.slice(0,-1);
     query+="WHERE "+pkField+"=\'"+serialisedPk+"\';";
 
     return query;
@@ -128,12 +134,19 @@ exports.update = function(typeName,pkField,serialisedPk,fields,values){
 exports.filter = function(typeName,filter){
     var query = "SELECT * from "+typeName+" ";
 
+
+    var model = modelUtil.getModel(typeName);
+
     if(filter == undefined){
         return query+";";
     }
     query +="WHERE ";
     for(var field in filter){
-        query += field + "=\'"+filter[field]+"\' AND ";
+        if(model.getFieldDescription(field).type === "boolean"){
+            query += field + "= b\'"+filter[field]+"\' AND ";
+        }else{
+            query += field + "=\'"+filter[field]+"\' AND ";
+        }
     }
     query = query.slice(0,-4);
     query+=";";

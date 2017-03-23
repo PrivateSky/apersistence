@@ -39,7 +39,7 @@ exports.test = function(persistence,objects,onSuccess){
         testFunctions.push(function(next){
             persistence.saveObject(object,function(err,result){
                 if(err){
-                    console.error(error);
+                    console.error(err);
                 }
                 else {
                     object = result;
