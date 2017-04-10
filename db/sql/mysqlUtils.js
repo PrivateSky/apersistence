@@ -112,7 +112,7 @@ exports.update = function(typeName,pkField,serialisedPk,fields,values){
         
     });
     query = query.slice(0,-1);
-    query+="WHERE "+pkField+"="+mysql.escape(serialisedPk)+";";
+    query+=" WHERE "+pkField+"="+mysql.escape(serialisedPk)+";";
 
     return query;
 }
