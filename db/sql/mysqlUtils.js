@@ -2,7 +2,7 @@
  * Created by ctalmacel on 12/21/15.
  */
 
-
+var mysql = require('mysql');
 var Q = require('q');
 var modelUtil = require("../../lib/ModelDescription.js");
 
@@ -58,14 +58,7 @@ exports.insertRow = function(tableName,serializedData){
 
 
     for(var field in serializedData){
-        
-        if(model.getFieldDescription(field).type === 'boolean') {
-            query+=' b\''+serializedData[field]+'\',';
-        }else{
-            query+=' \''+serializedData[field]+'\',';
-        }
-
-
+        query+= mysql.escape(serializedData[field])+',';
     }
     query = query.slice(0, -1);
     query+=');';

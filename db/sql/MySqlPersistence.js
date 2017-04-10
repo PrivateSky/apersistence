@@ -21,14 +21,13 @@ function sqlPersistenceStrategy(mysqlPool) {
 
             var validModel = true;
             var model = new modelUtil.ModelDescription(typeName,description,self);
-
+            
             tableStructure[0].forEach(function(column){
-                column['Type'] = column['Type'].split('(')[0];   //ignore size specifications such as INT(10)
+                column['Type'] = column['Type'].split('(')[0];   //ignore size specifications such as INT(10) ... not neccesarily reccomender
             });
 
             model.persistentProperties.some(function(modelProperty){
                 var expectedDbType = self.getDatabaseType(model.getFieldType(modelProperty));
-
                 if(expectedDbType === undefined){
                     validModel = false;
                     return true;
@@ -97,8 +96,7 @@ function sqlPersistenceStrategy(mysqlPool) {
                 callback(err);
             }else{
                 var model = modelUtil.getModel(typeName);
-                
-                var deserialized_id = modelUtil.deserialiseField(typeName,model.getPKField(),serialized_id,self)
+                var deserialized_id = modelUtil.deserialiseField(typeName,model.getPKField(),serialized_id,self);
                 var retObj = createRawObject(typeName, deserialized_id);
                 if (result.length>0) {
                     modelUtil.load(retObj, result[0], self);

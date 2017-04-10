@@ -109,7 +109,7 @@ assert.steps("Load lazy objects test",[
                 });
             })
         })
-    }]);
+    }],1000);
 
 
 
