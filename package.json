@@ -55,7 +55,8 @@
   ],
   "dependencies": {
     "asynchron": ">=1.0.19",
-    "moment": ">= 2.8.4"
+    "moment": ">= 2.8.4",
+    "mysql":">=2.13.0"
   },
   "description": "Generic persistence layer with memory caching, types",
   "devDependencies": {},
