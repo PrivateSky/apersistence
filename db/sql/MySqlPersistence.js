@@ -21,7 +21,7 @@ function sqlPersistenceStrategy(mysqlPool) {
 
             var validModel = true;
             var model = new modelUtil.ModelDescription(typeName,description,self);
-            
+
             tableStructure[0].forEach(function(column){
                 column['Type'] = column['Type'].split('(')[0];   //ignore size specifications such as INT(10) ... not neccesarily reccomender
             });
@@ -66,7 +66,7 @@ function sqlPersistenceStrategy(mysqlPool) {
 
         function createTable(){
             var persistentFields = modelUtil.getModel(typeName).persistentProperties;
-            var tableDescription = {}
+            var tableDescription = {};
             persistentFields.forEach(function(field){
                 tableDescription[field] = description[field];
             });

@@ -38,7 +38,6 @@ exports.createTable= function(persistenceStrategy,tableName,model){
             query += ' PRIMARY KEY (' + field + '),';
         }
     }
-
         query = query.slice(0,-1);
     query+=');';
     return query;
@@ -91,7 +90,7 @@ exports.dropTable =function(tableName){
 };
 
 exports.deleteObject = function(typeName,serialized_id){
-    return "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = \'"+serialized_id+"\';";
+    return "DELETE from "+typeName+ " WHERE "+modelUtil.getPKField(typeName)+" = "+mysql.escape(serialized_id)+";";
 }
 
 exports.describeTable = function(typeName){
@@ -99,7 +98,7 @@ exports.describeTable = function(typeName){
 }
 
 exports.find = function(typeName,pkField,serializedPk){
-    var query = 'SELECT * from ' + typeName + ' WHERE ' + pkField + " = \'" + serializedPk+"\';";
+    var query = 'SELECT * from ' + typeName + ' WHERE ' + pkField + " = " + mysql.escape(serializedPk)+";";
     return query
 }
 
@@ -109,25 +108,17 @@ exports.update = function(typeName,pkField,serialisedPk,fields,values){
     var query = 'UPDATE '+typeName+ " SET ";
     var length = fields.length;
     fields.forEach(function(field,index) {
-
-        if(model.getFieldDescription(field).type === "boolean"){
-            query += field+"=b\'" +values[index]+"\',";
-        }else{
-            query += field+"=\'" +values[index]+"\',";
-
-        }
+            query += field+"=" +mysql.escape(values[index])+",";
         
     });
     query = query.slice(0,-1);
-    query+="WHERE "+pkField+"=\'"+serialisedPk+"\';";
+    query+="WHERE "+pkField+"="+mysql.escape(serialisedPk)+";";
 
     return query;
 }
 
 exports.filter = function(typeName,filter){
     var query = "SELECT * from "+typeName+" ";
-
-
     var model = modelUtil.getModel(typeName);
 
     if(filter == undefined){
@@ -135,12 +126,9 @@ exports.filter = function(typeName,filter){
     }
     query +="WHERE ";
     for(var field in filter){
-        if(model.getFieldDescription(field).type === "boolean"){
-            query += field + "= b\'"+filter[field]+"\' AND ";
-        }else{
-            query += field + "=\'"+filter[field]+"\' AND ";
-        }
+        query += field + "="+mysql.escape(filter[field])+" AND ";
     }
+
     query = query.slice(0,-4);
     query+=";";
     return query;
