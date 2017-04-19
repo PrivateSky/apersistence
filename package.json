@@ -1,14 +1,14 @@
 {
   "_args": [
     [
-      "apersistence@>=1.0.5",
+      "apersistence@>=1.0.6",
       "/home/ciprian/storage/Workspace/node_modules/swarmcore"
     ]
   ],
   "_defaultsLoaded": true,
   "_engineSupported": true,
   "_from": "apersistence@>=1.0.4",
-  "_id": "apersistence@1.5.1",
+  "_id": "apersistence@1.5.2",
   "_inCache": true,
   "_installable": true,
   "_location": "/apersistence",
