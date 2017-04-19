@@ -12,67 +12,45 @@ function sqlPersistenceStrategy(mysqlPool) {
     var runQuery = Q.nbind(mysqlPool.query,mysqlPool);
 
     this.validateModel = function(typeName,description,callback){
-        runQuery(mysqlUtils.describeTable(typeName)).
-        then(validate,createTable).
-        then(function(isValid){callback(null,isValid)}).
-        catch(callback);
-
-        function validate(tableStructure){
-
-            var validModel = true;
-            var model = new modelUtil.ModelDescription(typeName,description,self);
-
-            tableStructure[0].forEach(function(column){
-                column['Type'] = column['Type'].split('(')[0];   //ignore size specifications such as INT(10) ... not neccesarily reccomender
-            });
-
-            model.persistentProperties.some(function(modelProperty){
-                var expectedDbType = self.getDatabaseType(model.getFieldType(modelProperty));
-                if(expectedDbType === undefined){
-                    validModel = false;
-                    return true;
+        mysqlPool.query("DESCRIBE "+typeName,function (err,sqlProperties) {
+            if(err){
+                if(err.message.match('ER_NO_SUCH_TABLE')) {
+                    var persistentFields = modelUtil.getModel(typeName).persistentProperties;
+                    var tableDescription = {};
+                    persistentFields.forEach(function (field) {
+                        tableDescription[field] = description[field];
+                    });
+                    mysqlPool.query(mysqlUtils.createTable(self, typeName, tableDescription), callback);
+                }else{
+                    callback(err);
                 }
-
-                var validProperty = false;
-                tableStructure[0].some(function(column){
-                    if(column['Field'] === modelProperty){
-                        validProperty = true;
-                        var dbType = column['Type'];
-
-                        if(dbType.indexOf(')')!==-1){
-                            dbType = dbType.slice(dbType.indexOf('('));
-                        }
-
-                        if(dbType !== expectedDbType) {
-                            validProperty = false;
-                        }
-
-                        if(column['Key']==='PRI') {
-                            if (column['Field'] !== model.getPKField()) {
-                                validProperty = false;
-                            }
-                        }
-                        return true; // arry.some(callback) breaks when the callback returns true
-                    }
+            }else{
+                var invalidProperties = [];
+                var model = new modelUtil.ModelDescription(typeName,description,self);
+                sqlProperties.forEach(function(column){
+                    column['Type'] = column['Type'].split('(')[0];   //ignore size specifications such as INT(10)
                 });
-
-                if(validProperty === false){
-                    validModel = false;
-                    return true; // same motivation
+                model.persistentProperties.forEach(function(modelProperty){
+                    var expectedDbType = self.getDatabaseType(model.getFieldType(modelProperty));
+                    if(expectedDbType === undefined){
+                        invalidProperties.push(new Error("Property "+modelProperty+" is invalid because the sql type for "+model.getFieldType(modelProperty)+" apersistence Type is unknown"));
+                        return;
+                    }
+                    sqlProperties.forEach(function(sqlProperty){
+                        if(sqlProperty.field === modelProperty && sqlProperty.type !== expectedDbType){
+                            invalidProperties.push(new Error("Property "+modelProperty+" is invalid because the expected sql type for "
+                                +model.getFieldType(modelProperty)+" apersistence Type is "+expectedDbType+" " +
+                                "whereas in the table the type is "+column['Type']));
+                        }
+                    })
+                });
+                if(invalidProperties.length >0){
+                    callback(invalidProperties)
+                }else{
+                    callback();
                 }
-            });
-            return validModel;
-        }
-
-        function createTable(){
-            var persistentFields = modelUtil.getModel(typeName).persistentProperties;
-            var tableDescription = {};
-            persistentFields.forEach(function(field){
-                tableDescription[field] = description[field];
-            });
-            return runQuery(mysqlUtils.createTable(self,typeName,tableDescription));
-        }
-
+            }
+        })
     };
 
     this.findById = function (typeName, serialized_id, callback) {
