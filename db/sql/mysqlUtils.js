@@ -40,6 +40,7 @@ exports.createTable= function(persistenceStrategy,tableName,model){
     }
         query = query.slice(0,-1);
     query+=');';
+
     return query;
 };
 
@@ -126,10 +127,21 @@ exports.filter = function(typeName,filter){
     }
     query +="WHERE ";
     for(var field in filter){
-        query += field + "="+mysql.escape(filter[field])+" AND ";
+        if(Array.isArray(filter[field])){
+            query+="( ";
+            filter[field].forEach(function(acceptedValue){
+                query+=field+"="+mysql.escape(acceptedValue)+" OR ";
+            });
+            query = query.slice(0,-3); //cut the last 'OR'
+            query+=") AND ";
+        }else{
+            query += field + "="+mysql.escape(filter[field])+" AND ";
+        }
     }
 
-    query = query.slice(0,-4);
+    query = query.slice(0,-4); //cut the last 'AND'
     query+=";";
     return query;
 }
+
+
