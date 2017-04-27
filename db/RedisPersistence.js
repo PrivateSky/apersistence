@@ -99,15 +99,37 @@ function RedisPersistenceStrategy(redisConnection){
     };
 
     function filterArray(typeName, arr, filter, callback){
-        var res = [];
-        arr.forEach(function(o){
-            for(var k in filter){
-                if(o[k] != filter[k]) return;
-            }
-            var retObj = createRawObject(typeName);
-            modelUtil.load(retObj, o, self);
-            res.push(retObj);
+        var matchingObjects = arr.filter(function(obj){
+            return matchesFilter(obj,filter);
         });
+
+        var res = matchingObjects.map(function(obj){
+            var retObj = createRawObject(typeName);
+            modelUtil.load(retObj, obj, self);
+            return retObj
+        });
+
+        function matchesFilter(obj,filter){
+            for(var field in filter) {
+                if (Array.isArray(filter[field])) {
+                    var matchesField = false;
+                    filter[field].forEach(function (fieldValue) {
+                        if(obj[field] === fieldValue){
+                            matchesField =  true;
+                        }
+                    });
+
+                    if (matchesField == false) {
+                        return false;
+                    }
+                } 
+                else if (obj[field] != filter[field]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         callback(null, res);
     }
 
@@ -196,14 +218,29 @@ function RedisPersistenceStrategy(redisConnection){
             }
         }
 
+
         if(foundIndex){
-            returnIndexPart(typeName, foundIndex, filter[foundIndex], function(err,res){
-                if(err){
-                    callback(err);
-                }else {
-                    filterArray(typeName, res, filter, callback);
-                }
-            });
+            var acceptedValues = [filter[foundIndex]];
+            var matchingObjects = [];
+            if(Array.isArray(filter[foundIndex])){
+                acceptedValues = filter[foundIndex];
+            }
+            var remaining = acceptedValues.length;
+
+            acceptedValues.forEach(function(value){
+                returnIndexPart(typeName, foundIndex, value, function(err,res){
+                    remaining--;
+                    if(err){
+                        callback(err);
+                    }else{
+                        matchingObjects = matchingObjects.concat(res);
+                    }
+                    if(remaining === 0){
+                        filterArray(typeName, matchingObjects, filter, callback);
+                    }
+                });
+            })
+
         } else {
             returnAllObjects(typeName, function(err,res){
                 if(err){

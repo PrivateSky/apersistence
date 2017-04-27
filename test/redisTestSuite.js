@@ -81,7 +81,7 @@ assert.steps("Redis test suite",[
         var filterTests = [
             {
                 modelName:modelName,
-                filter:{name:"Ana"},
+                filter:{name:["Ana"]},
                 expectedResults: [{id: "4", name: "Ana", location: "Bucuresti",sex:true},
                                     {id: "3", name: "Ana", location: "Iasi",sex:false}]}
         ];

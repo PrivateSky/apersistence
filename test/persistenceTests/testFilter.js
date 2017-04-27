@@ -18,13 +18,12 @@ exports.test = function(persistence,filterTests,onSuccess){
                     throw(err);
                 }
                 var match = true;
-                for(var field in filterTest.filter){
-                    results.forEach(function(result){
-                        if(result[field]!==filterTest.filter[field]){
-                            match = false;
-                        }
-                    })
-                }
+                results.forEach(function(result){
+                    if(!matchesFilter(result,filterTest.filter)){
+                        match = false;
+                    }
+                });
+
                 assert.equal(true,match,"The results do not match the filters");
 
                 next();
@@ -47,5 +46,28 @@ function expectedObject(expectedObject,resultObject){
     }
     return true;
 }
+
+function matchesFilter(obj,filter){
+    for(var field in filter) {
+        if (Array.isArray(filter[field])) {
+            var matchesField = false;
+            filter[field].forEach(function (fieldValue) {
+                if(obj[field] === fieldValue){
+                    matchesField =  true;
+                }
+            });
+
+            if (matchesField == false) {
+                return false;
+            }
+        }
+        else if (obj[field] != filter[field]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 
 

@@ -129,7 +129,7 @@ assert.steps("Mysql test suite",[
         var filterTests = [
             {  
                 modelName:modelName,
-                filter:{location:'Iasi',sex:false},
+                filter:{location:['Iasi'],sex:false},
                 expectedResults: [{id:"3",name:"Dan",location:"Iasi",sex:false},
                     {id:"5",name:"Ion",location:"Iasi",sex:false}]
             },
