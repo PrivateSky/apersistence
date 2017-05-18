@@ -1,7 +1,7 @@
 {
   "_args": [
     [
-      "apersistence@>=1.0.6",
+      "apersistence@>=1.0.7",
       "/home/ciprian/storage/Workspace/node_modules/swarmcore"
     ]
   ],
@@ -93,5 +93,5 @@
     "url": "git+https://github.com/salboaie/abstract-persistence.git"
   },
   "scripts": {},
-  "version": "1.5.2"
+  "version": "1.5.3"
 }
