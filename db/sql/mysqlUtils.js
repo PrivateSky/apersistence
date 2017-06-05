@@ -128,14 +128,29 @@ exports.filter = function(typeName,filter){
     query +="WHERE ";
     for(var field in filter){
         if(Array.isArray(filter[field])){
+            var type = model.getFieldType(field);
             query+="( ";
             filter[field].forEach(function(acceptedValue){
-                query+=field+"="+mysql.escape(acceptedValue)+" OR ";
+                if(['int', 'float', 'number'].indexOf(type) != -1 && isNaN(acceptedValue)) {
+                    var sign = acceptedValue.split(/[0-9]/)[0].replace(' ', '');
+                    var number = acceptedValue.replace(sign, '').replace(' ', '');
+                    query+=field+sign+mysql.escape(number)+" OR ";
+                } else {
+                    query+=field+"="+mysql.escape(acceptedValue)+" OR ";
+                    
+                }
             });
             query = query.slice(0,-3); //cut the last 'OR'
             query+=") AND ";
-        }else{
-            query += field + "="+mysql.escape(filter[field])+" AND ";
+        } else {
+            var type = model.getFieldType(field);
+            if(['int', 'float', 'number'].indexOf(type) != -1 && isNaN(filter[field])) {
+                var sign = filter[field].split(/[0-9]/)[0].replace(' ', '');
+                var number = filter[field].replace(sign, '').replace(' ', '');
+                query+=field+sign+mysql.escape(number)+" OR ";    
+            } else {
+                query += field + "="+mysql.escape(filter[field])+" AND ";
+            }
         }
     }
 

@@ -11,10 +11,10 @@ var redisConnection = async.bindAllMembers(redis.createClient());
 var persistence = apersistence.createRedisPersistence(redisConnection);
 
 var rawData = [
-    {id: "2", name: "Dana", location: "Tecuci",sex:true},
-    {id: "3", name: "Ana", location: "Iasi",sex:false},
-    {id: "4", name: "Ana", location: "Bucuresti",sex:true},
-    {id: "5", name: "Ion", location: "Iasi",sex:false}
+    {id: "2", name: "Dana", location: "Tecuci",sex:true, age:25},
+    {id: "3", name: "Ana", location: "Iasi",sex:true, age:21},
+    {id: "4", name: "Ana", location: "Bucuresti",sex:true, age:21},
+    {id: "5", name: "Ion", location: "Iasi",sex:false, age:24}
 ];
 
 var model = {
@@ -36,6 +36,11 @@ var model = {
     sex: {
         type:'boolean',
         default:true
+    },
+    age: {
+        type: 'int',
+        default:20,
+        index:true
     }
 };
 
@@ -81,9 +86,23 @@ assert.steps("Redis test suite",[
         var filterTests = [
             {
                 modelName:modelName,
+                filter:{age:["<22"]},
+                expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true, age:21},
+                                    {id: 3, name: "Ana", location: "Iasi",sex:true, age:21}]}
+        ];
+
+        testFilter(persistence,filterTests,function(testWasSuccessfull){
+            testWasSuccessfull();
+            next();
+        })
+    },
+    function(next){
+        var filterTests = [
+            {
+                modelName:modelName,
                 filter:{name:["Ana"]},
-                expectedResults: [{id: "4", name: "Ana", location: "Bucuresti",sex:true},
-                                    {id: "3", name: "Ana", location: "Iasi",sex:false}]}
+                expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true, age:21},
+                                    {id: 3, name: "Ana", location: "Iasi",sex:true, age:21}]}
         ];
 
         testFilter(persistence,filterTests,function(testWasSuccessfull){

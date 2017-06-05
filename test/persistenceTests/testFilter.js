@@ -14,16 +14,29 @@ exports.test = function(persistence,filterTests,onSuccess){
     filterTests.forEach(function(filterTest) {
         testFunctions.push(function (next) {
             persistence.filter(filterTest.modelName, filterTest.filter, function (err, results) {
+                var expectedResults = []
+                for(var r in filterTest.expectedResults) {
+                    if(typeof(filterTest.expectedResults[r]) === 'object') {
+                       expectedResults.push(JSON.stringify(filterTest.expectedResults[r]))
+                    }
+                }
+
                 if(err){
                     throw(err);
                 }
                 var match = true;
                 results.forEach(function(result){
-                    if(!matchesFilter(result,filterTest.filter)){
+                    var index = expectedResults.indexOf(JSON.stringify(result.__meta.savedValues));
+                    if(index == -1) {
                         match = false;
+                    } else {
+                        expectedResults.splice(index,1)
                     }
-                });
 
+                });
+                if(expectedResults.length) {
+                    match = false;
+                }
                 assert.equal(true,match,"The results do not match the filters");
 
                 next();
@@ -36,36 +49,6 @@ exports.test = function(persistence,filterTests,onSuccess){
     })
 
     assert.steps("Test filter",testFunctions);
-}
-
-function expectedObject(expectedObject,resultObject){
-    for(var field in expectedObject){
-        if(resultObject[field] !== expectedObject[field]){
-            return false;
-        }
-    }
-    return true;
-}
-
-function matchesFilter(obj,filter){
-    for(var field in filter) {
-        if (Array.isArray(filter[field])) {
-            var matchesField = false;
-            filter[field].forEach(function (fieldValue) {
-                if(obj[field] === fieldValue){
-                    matchesField =  true;
-                }
-            });
-
-            if (matchesField == false) {
-                return false;
-            }
-        }
-        else if (obj[field] != filter[field]) {
-            return false;
-        }
-    }
-    return true;
 }
 
 

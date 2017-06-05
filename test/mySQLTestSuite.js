@@ -20,10 +20,10 @@ var mysqlPool = mysql.createPool({
 
 
 var rawData = [
-        {id: "2", name: "Dana", location: "Tecuci",sex:true},
-        {id: "3", name: "Dan", location: "Iasi",sex:false},
-        {id: "4", name: "Ana", location: "Bucuresti",sex:true},
-        {id: "5", name: "Ion", location: "Iasi",sex:false}
+        {id: "2", name: "Dana", location: "Tecuci",sex:true,age:20},
+        {id: "3", name: "Dan", location: "Iasi",sex:false,age:20},
+        {id: "4", name: "Ana", location: "Bucuresti",sex:true,age:21},
+        {id: "5", name: "Ion", location: "Iasi",sex:false,age:22}
 ];
 
 var model = {
@@ -45,6 +45,10 @@ var model = {
     sex: {
         type:'boolean',
         default:true
+    },
+    age: {
+        type:'int',
+        default:19
     }
 };
 
@@ -130,13 +134,19 @@ assert.steps("Mysql test suite",[
             {  
                 modelName:modelName,
                 filter:{location:['Iasi'],sex:false},
-                expectedResults: [{id:"3",name:"Dan",location:"Iasi",sex:false},
-                    {id:"5",name:"Ion",location:"Iasi",sex:false}]
+                expectedResults: [{id:3,name:"Dan",location:"Iasi",sex:false,age:20},
+                    {id:5,name:"Ion",location:"Iasi",sex:false,age:22}]
             },
             {
                 modelName:modelName,
                 filter:{location:"Bucuresti",name:"Ana"},
-                expectedResults: [{id: "4", name: "Ana", location: "Bucuresti",sex:true}]
+                expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true,age:21}]
+            },
+            {
+                modelName:modelName,
+                filter:{age:[">20"]},
+                expectedResults:[{id: 4, name: "Ana", location: "Bucuresti",sex:true,age:21},
+                                 {id: 5, name: "Ion", location: "Iasi",sex:false,age:22}]
             }
         ];
         
