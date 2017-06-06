@@ -102,6 +102,16 @@ function RedisPersistenceStrategy(redisConnection){
         var matchingObjects = arr.filter(function(obj){
             return matchesFilter(obj,filter);
         });
+        // filter matchingObjects to be unique since some filters may not be disjoint
+        // e.g. "= 21" and "<24"
+        matchingObjects = matchingObjects.filter(function(elem, pos) {
+            for(var i = pos+1; i < matchingObjects.length; ++i) {
+                if(JSON.stringify(matchingObjects[i]) === JSON.stringify(elem)){
+                    return false;
+                }
+            }
+            return true;
+    })
 
         var res = matchingObjects.map(function(obj){
             var retObj = createRawObject(typeName);
@@ -114,8 +124,10 @@ function RedisPersistenceStrategy(redisConnection){
                 if (Array.isArray(filter[field])) {
                     var matchesField = false;
                     filter[field].forEach(function (fieldValue) {
-                        if(obj[field] === fieldValue){
-                            matchesField =  true;
+                        if (typeof(obj[field]) === 'number' && isNaN(fieldValue)) {
+                            matchesField = matchesField || matchFilterRange(obj[field], fieldValue)
+                        } else if(obj[field] == fieldValue){
+                            matchesField =  matchesField || true;
                         }
                     });
 
@@ -123,30 +135,58 @@ function RedisPersistenceStrategy(redisConnection){
                         return false;
                     }
                 } 
-                else if (obj[field] != filter[field]) {
-                    return false;
-                }
+                else if(typeof(obj[field]) === 'number' && isNaN(filter[field])) {
+                            return matchFilterRange(obj[field], filter[field]) 
+                    } else return obj[field] == filter[field]
             }
             return true;
+        }
+
+        function matchFilterRange(value, filter) {
+            var math_it_up = {
+                '<': function(x,y) {return x < y},
+                '<=': function(x,y) {return x <= y},
+                '>': function(x,y) { return x > y},
+                '>=': function(x,y) { return x >= y},
+                '!=': function(x,y) {return x != y}
+            }
+
+            var sign = filter.split(/[0-9]/)[0].replace(' ', '');
+            var number = filter.replace(sign, '').replace(' ', '');
+            return math_it_up[sign](value, Number(number))
+
         }
 
         callback(null, res);
     }
 
     function returnIndexPart(typeName, indexName, value, callback){
-        var idxKey = mkIndexKey(typeName, indexName, value);
-        redisConnection.hgetall(idxKey,function(err,ret){
-            if(err){
-                callback(err);
-            }else{
-                var arr = [];
-                for(var v in ret){
-                    arr.push(JSON.parse(ret[v]));
-                }
-                callback(null, arr);
-            }
-
-        })
+        var idxKeyPattern;
+        var type = modelUtil.getModel(typeName).getFieldType(indexName);
+        if(['int', 'float', 'number'].indexOf(type) != -1 && !isNaN(value)) {
+            idxKeyPattern = mkIndexKey(typeName, indexName, value);
+        } else {
+            idxKeyPattern = mkIndexKey(typeName, indexName, '*');
+        }
+        var arr = []
+        redisConnection.keys(idxKeyPattern, function(err, resp) {
+            var processed = 0
+            resp.forEach((key)=> {
+                redisConnection.hgetall(key, (err, ret) =>{
+                    processed++;
+                    if(err) {
+                        callback(err);
+                    } else {
+                        for(var v in ret){
+                            arr.push(JSON.parse(ret[v]));
+                        }
+                        if(processed == resp.length) {
+                            callback(null, arr);
+                        }
+                    }
+                }) 
+            });
+        });
     }
 
     function updateAllIndexes(typeName, obj,callback){
