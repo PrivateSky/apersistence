@@ -144,9 +144,8 @@ assert.steps("Mysql test suite",[
             },
             {
                 modelName:modelName,
-                filter:{age:[">20"]},
-                expectedResults:[{id: 4, name: "Ana", location: "Bucuresti",sex:true,age:21},
-                                 {id: 5, name: "Ion", location: "Iasi",sex:false,age:22}]
+                filter:{age:[">20"], name:["!=Ana"]},
+                expectedResults:[{id: 5, name: "Ion", location: "Iasi",sex:false,age:22}]
             }
         ];
         
