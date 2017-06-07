@@ -124,7 +124,7 @@ function RedisPersistenceStrategy(redisConnection){
                 if (Array.isArray(filter[field])) {
                     var matchesField = false;
                     filter[field].forEach(function (fieldValue) {
-                        if (typeof(obj[field]) === 'number' && isNaN(fieldValue)) {
+                        if(isComparison(fieldValue)) {
                             matchesField = matchesField || matchFilterRange(obj[field], fieldValue)
                         } else if(obj[field] == fieldValue){
                             matchesField =  matchesField || true;
@@ -135,15 +135,20 @@ function RedisPersistenceStrategy(redisConnection){
                         return false;
                     }
                 } 
-                else if(typeof(obj[field]) === 'number' && isNaN(filter[field])) {
-                            return matchFilterRange(obj[field], filter[field]) 
-                    } else return obj[field] == filter[field]
+                else if(isComparison(filter[field])) {
+                    matchesField = matchFilterRange(obj[field], filter[field]) 
+                    if(matchesField == false) {
+                        return false
+                    }
+                } else return obj[field] == filter[field]
             }
             return true;
         }
 
+        
+
         function matchFilterRange(value, filter) {
-            var math_it_up = {
+            var compare = {
                 '<': function(x,y) {return x < y},
                 '<=': function(x,y) {return x <= y},
                 '>': function(x,y) { return x > y},
@@ -151,22 +156,30 @@ function RedisPersistenceStrategy(redisConnection){
                 '!=': function(x,y) {return x != y}
             }
 
-            var sign = filter.split(/[0-9]/)[0].replace(' ', '');
-            var number = filter.replace(sign, '').replace(' ', '');
-            return math_it_up[sign](value, Number(number))
 
+            var sign = filter.split(/[^<>=!]/)[0].replace(' ', '');
+            var field = filter.replace(sign, '').replace(' ', '');
+
+            if(typeof(value) === 'number') { //numbers are not lexicographically comparable
+                return compare[sign](value, Number(field));
+            } else {
+                return compare[sign](value, field);
+            }
         }
 
         callback(null, res);
     }
 
+    function isComparison(filter) {
+        return (["<", "!", ">"].indexOf(filter[0]) != -1);
+    }
+
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKeyPattern;
-        var type = modelUtil.getModel(typeName).getFieldType(indexName);
-        if(['int', 'float', 'number'].indexOf(type) != -1 && !isNaN(value)) {
-            idxKeyPattern = mkIndexKey(typeName, indexName, value);
-        } else {
+        if(isComparison(value)) {
             idxKeyPattern = mkIndexKey(typeName, indexName, '*');
+        } else {
+            idxKeyPattern = mkIndexKey(typeName, indexName, value);
         }
         var arr = []
         redisConnection.keys(idxKeyPattern, function(err, resp) {

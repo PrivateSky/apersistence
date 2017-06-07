@@ -119,6 +119,11 @@ exports.update = function(typeName,pkField,serialisedPk,fields,values){
 }
 
 exports.filter = function(typeName,filter){
+
+    function isComparison(filter) {
+        return (["<", "!", ">"].indexOf(filter[0]) != -1);
+    }
+
     var query = "SELECT * from "+typeName+" ";
     var model = modelUtil.getModel(typeName);
 
@@ -131,23 +136,22 @@ exports.filter = function(typeName,filter){
             var type = model.getFieldType(field);
             query+="( ";
             filter[field].forEach(function(acceptedValue){
-                if(['int', 'float', 'number'].indexOf(type) != -1 && isNaN(acceptedValue)) {
-                    var sign = acceptedValue.split(/[0-9]/)[0].replace(' ', '');
-                    var number = acceptedValue.replace(sign, '').replace(' ', '');
-                    query+=field+sign+mysql.escape(number)+" OR ";
+                if(isComparison(acceptedValue)) {
+                    var sign = acceptedValue.split(/[^<>=!]/)[0].replace(' ', '');
+                    var value = acceptedValue.replace(sign, '').replace(' ', '');
+                    query+=field+sign+mysql.escape(value)+" OR ";    
                 } else {
                     query+=field+"="+mysql.escape(acceptedValue)+" OR ";
-                    
                 }
             });
             query = query.slice(0,-3); //cut the last 'OR'
             query+=") AND ";
         } else {
             var type = model.getFieldType(field);
-            if(['int', 'float', 'number'].indexOf(type) != -1 && isNaN(filter[field])) {
-                var sign = filter[field].split(/[0-9]/)[0].replace(' ', '');
-                var number = filter[field].replace(sign, '').replace(' ', '');
-                query+=field+sign+mysql.escape(number)+" OR ";    
+            if(isComparison(filter[field])) {
+                var sign = filter[field].split(/[^<>=!]/)[0].replace(' ', '');
+                var value = filter[field].replace(sign, '').replace(' ', '');
+                query+=field+sign+mysql.escape(value)+" AND ";    
             } else {
                 query += field + "="+mysql.escape(filter[field])+" AND ";
             }

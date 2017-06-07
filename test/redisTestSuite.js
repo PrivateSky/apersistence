@@ -86,9 +86,8 @@ assert.steps("Redis test suite",[
         var filterTests = [
             {
                 modelName:modelName,
-                filter:{age:["<22"]},
-                expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true, age:21},
-                                    {id: 3, name: "Ana", location: "Iasi",sex:true, age:21}]}
+                filter:{name:"!=Ana", age:"<25"},
+                expectedResults: [{id: 5, name: "Ion", location: "Iasi",sex:false, age:24}]}
         ];
 
         testFilter(persistence,filterTests,function(testWasSuccessfull){
