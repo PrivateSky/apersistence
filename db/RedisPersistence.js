@@ -177,23 +177,24 @@ function RedisPersistenceStrategy(redisConnection){
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKeyPattern;
         var arr = [];
-
         if(isComparison(value)) {
             idxKeyPattern = mkIndexKey(typeName, indexName, '*');
             var sign = value.split(/[^<>=!]/)[0].replace(' ', '');
             var field = value.replace(sign, '').replace(' ', '');
-
+            var typeOfIndex = modelUtil.getModel(typeName).getFieldType(indexName);
             redisConnection.keys(idxKeyPattern, function(err, resp) {
+                //get all possible values for index, keep only those that match the comparison and fetch the data at the locations they point in the database
                 var processed = 0;
                 resp = resp.filter((key)=>{
                     key = key.split(":");
                     key = key[key.length-1];
-                    if (typeof(value) === 'number') {
-                        return compare[sign](value,Number(key))
+
+                    if ( ['float','int'].indexOf(typeOfIndex) !== -1){
+                        return compare[sign](Number(key),Number(field))
                     }else{
-                        return compare[sign](value,key)
+                        return compare[sign](key,field)
                     }
-                })
+                });
 
                 resp.forEach((key)=> {
                     redisConnection.hgetall(key, (err, ret) =>{
