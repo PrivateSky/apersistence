@@ -98,6 +98,15 @@ function RedisPersistenceStrategy(redisConnection){
         }
     };
 
+
+    var compare = {
+        '<': function(x,y) {return x < y},
+        '<=': function(x,y) {return x <= y},
+        '>': function(x,y) { return x > y},
+        '>=': function(x,y) { return x >= y},
+        '!=': function(x,y) {return x != y}
+    }
+
     function filterArray(typeName, arr, filter, callback){
         var matchingObjects = arr.filter(function(obj){
             return matchesFilter(obj,filter);
@@ -111,7 +120,7 @@ function RedisPersistenceStrategy(redisConnection){
                 }
             }
             return true;
-    })
+        })
 
         var res = matchingObjects.map(function(obj){
             var retObj = createRawObject(typeName);
@@ -148,15 +157,6 @@ function RedisPersistenceStrategy(redisConnection){
         
 
         function matchFilterRange(value, filter) {
-            var compare = {
-                '<': function(x,y) {return x < y},
-                '<=': function(x,y) {return x <= y},
-                '>': function(x,y) { return x > y},
-                '>=': function(x,y) { return x >= y},
-                '!=': function(x,y) {return x != y}
-            }
-
-
             var sign = filter.split(/[^<>=!]/)[0].replace(' ', '');
             var field = filter.replace(sign, '').replace(' ', '');
 
@@ -176,30 +176,55 @@ function RedisPersistenceStrategy(redisConnection){
 
     function returnIndexPart(typeName, indexName, value, callback){
         var idxKeyPattern;
+        var arr = [];
+
         if(isComparison(value)) {
             idxKeyPattern = mkIndexKey(typeName, indexName, '*');
+            var sign = value.split(/[^<>=!]/)[0].replace(' ', '');
+            var field = value.replace(sign, '').replace(' ', '');
+
+            redisConnection.keys(idxKeyPattern, function(err, resp) {
+                var processed = 0;
+                resp = resp.filter((key)=>{
+                    key = key.split(":");
+                    key = key[key.length-1];
+                    if (typeof(value) === 'number') {
+                        return compare[sign](value,Number(key))
+                    }else{
+                        return compare[sign](value,key)
+                    }
+                })
+
+                resp.forEach((key)=> {
+                    redisConnection.hgetall(key, (err, ret) =>{
+                        processed++;
+                        if(err) {
+                            callback(err);
+                        } else {
+                            for(var v in ret){
+                                arr.push(JSON.parse(ret[v]));
+                            }
+                            if(processed == resp.length) {
+                                callback(null, arr);
+                            }
+                        }
+                    })
+                });
+            });
         } else {
             idxKeyPattern = mkIndexKey(typeName, indexName, value);
-        }
-        var arr = []
-        redisConnection.keys(idxKeyPattern, function(err, resp) {
-            var processed = 0
-            resp.forEach((key)=> {
-                redisConnection.hgetall(key, (err, ret) =>{
-                    processed++;
-                    if(err) {
-                        callback(err);
-                    } else {
-                        for(var v in ret){
-                            arr.push(JSON.parse(ret[v]));
-                        }
-                        if(processed == resp.length) {
-                            callback(null, arr);
-                        }
+            redisConnection.hgetall(idxKeyPattern,(err,res) => {
+                if(err){
+                    callback(err);
+                }
+                else{
+                    for(var v in res){
+                        arr.push(JSON.parse(res[v]));
                     }
-                }) 
-            });
-        });
+                    callback(null,arr);
+                }
+            })
+        }
     }
 
     function updateAllIndexes(typeName, obj,callback){
