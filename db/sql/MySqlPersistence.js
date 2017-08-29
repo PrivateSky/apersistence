@@ -141,6 +141,10 @@ function sqlPersistenceStrategy(mysqlPool) {
             delete self.cache[id];
             callback(err);
         });
+    };
+
+    this.query = function(query,callback){
+        mysqlPool.query(query,callback);
     }
 }
 

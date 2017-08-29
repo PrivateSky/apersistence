@@ -28,8 +28,13 @@ exports.createTable= function(persistenceStrategy,tableName,model){
             }
         }
         query+=dbType;
-        if(field.hasOwnProperty('default')){
-            query+=' DEFAULT'+field.default;
+
+        if(model[field].hasOwnProperty('default')){
+            if(dbType.startsWith('varchar')) {
+                query += " DEFAULT '" + model[field].default+"'";
+            }else{
+                query += " DEFAULT " + model[field].default;
+            }
         }
         query+=',';
     }
@@ -38,7 +43,7 @@ exports.createTable= function(persistenceStrategy,tableName,model){
             query += ' PRIMARY KEY (' + field + '),';
         }
     }
-        query = query.slice(0,-1);
+    query = query.slice(0,-1);
     query+=');';
 
     return query;
