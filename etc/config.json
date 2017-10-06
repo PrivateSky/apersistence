@@ -1,0 +1,5 @@
+{
+	"password": "mysuperstrongpassword",
+	"big_prime": 1223,
+	"algorithm": "aes-256-cbc"
+}
