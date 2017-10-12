@@ -137,8 +137,12 @@ exports.filter = function(typeName,filter){
     }
     query +="WHERE ";
     for(var field in filter){
+        var type = model.getFieldType(field);
+        if(type === null){
+            continue;  //in filter we can have fields such as LIMIT
+        }
+
         if(Array.isArray(filter[field])){
-            var type = model.getFieldType(field);
             query+="( ";
             filter[field].forEach(function(acceptedValue){
                 if(isComparison(acceptedValue)) {
@@ -152,7 +156,6 @@ exports.filter = function(typeName,filter){
             query = query.slice(0,-3); //cut the last 'OR'
             query+=") AND ";
         } else {
-            var type = model.getFieldType(field);
             if(isComparison(filter[field])) {
                 var sign = filter[field].split(/[^<>=!]/)[0].replace(' ', '');
                 var value = filter[field].replace(sign, '').replace(' ', '');
@@ -164,8 +167,38 @@ exports.filter = function(typeName,filter){
     }
 
     query = query.slice(0,-4); //cut the last 'AND'
+
+    if(filter.hasOwnProperty("ORDER")) {
+        query += " ORDER BY "
+        if (Array.isArray(filter['ORDER'])) {
+            filter['ORDER'].forEach(addOrderField);
+        } else {
+            addOrderField(filter["ORDER"]);
+        }
+        function addOrderField(orderField) {
+
+            query += orderField.field + " ";
+            if (orderField.type) {
+                query += orderField.type;
+            }
+            query += ",";
+        }
+    }
+    query = query.slice(0,-1); //cut the last ','
+
+    if(filter.hasOwnProperty("LIMIT")){
+        if(!filter['LIMIT'].lowerBound || !filter["LIMIT"].upperBound){
+            throw new Error("'LIMIT' field of filters must have at least one of the following fields: 'lowerBound','upperBound' ")
+        }
+        query+=" LIMIT "+filter['LIMIT'].lowerBound+","+filter["LIMIT"].upperBound;
+    }
+
+
     query+=";";
+    
     return query;
 }
+
+
 
 

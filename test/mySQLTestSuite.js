@@ -29,7 +29,6 @@ var rawData = [
 var model = {
     id: {
         type:'int',
-        default:"no name",
         pk:true
     },
     name: {
@@ -131,21 +130,31 @@ assert.steps("Mysql test suite",[
     },
     function(next){
         var filterTests = [
-            {  
-                modelName:modelName,
-                filter:{location:['Iasi'],sex:false},
-                expectedResults: [{id:3,name:"Dan",location:"Iasi",sex:false,age:20},
-                    {id:5,name:"Ion",location:"Iasi",sex:false,age:22}]
-            },
             {
                 modelName:modelName,
-                filter:{location:"Bucuresti",name:"Ana"},
-                expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true,age:21}]
+                filter:{
+                    location:['Iasi'],
+                    sex:false,
+                    LIMIT:{lowerBound:1,upperBound:2},
+                    ORDER:[{field:"name",type:"ASC"}]
+                },
+                expectedResults: [
+                    //{id:3,name:"Dan",location:"Iasi",sex:false,age:20},--- dropped becaust of the "LIMIT"
+                    {id:5,name:"Ion",location:"Iasi",sex:false,age:22}
+                ]
             },
             {
                 modelName:modelName,
                 filter:{age:[">20"], name:["!=Ana"]},
                 expectedResults:[{id: 5, name: "Ion", location: "Iasi",sex:false,age:22}]
+            },
+            {
+                modelName:modelName,
+                filter:{
+                    location:"Bucuresti",
+                    name:"Ana"
+                },
+                expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true,age:21}]
             }
         ];
         
