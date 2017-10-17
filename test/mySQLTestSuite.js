@@ -136,11 +136,11 @@ assert.steps("Mysql test suite",[
                     location:['Iasi'],
                     sex:false,
                     LIMIT:{lowerBound:1,upperBound:2},
-                    ORDER:[{field:"name",type:"ASC"}]
+                    ORDER:[{field:"name",type:"ASC"}],
+                    REQUIRED_FIELDS:["location","sex"]
                 },
                 expectedResults: [
-                    //{id:3,name:"Dan",location:"Iasi",sex:false,age:20},--- dropped becaust of the "LIMIT"
-                    {id:5,name:"Ion",location:"Iasi",sex:false,age:22}
+                    {location:"Iasi",sex:false}
                 ]
             },
             {
