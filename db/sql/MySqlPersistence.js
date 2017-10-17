@@ -120,11 +120,21 @@ function sqlPersistenceStrategy(mysqlPool) {
             var objects = [];
             results.forEach(function(rawData){
                 var newObject = createRawObject(typeName,rawData[modelUtil.getPKField(typeName)]);
+                if(filter['REQUIRED_FIELDS']){
+                    modelUtil.getModel(typeName).persistentProperties.forEach(function(field){
+                        if(!filter['REQUIRED_FIELDS'].some(function(requiredField){return field===requiredField}))
+                        {
+                            delete newObject[field]
+                        }
+                    })
+                }
+
                 modelUtil.load(newObject,rawData,self);
                 objects.push(newObject);
             })
             return objects;
         }
+
         runQuery(mysqlUtils.filter(typeName,filter)).
         then(createObjectsFromData).
         then(function(objectsArray){callback(null,objectsArray);}).

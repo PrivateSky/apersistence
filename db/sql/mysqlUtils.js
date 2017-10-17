@@ -129,7 +129,20 @@ exports.filter = function(typeName,filter){
         return (["<", "!", ">"].indexOf(filter[0]) != -1);
     }
 
-    var query = "SELECT * from "+typeName+" ";
+    var required_fields;
+    if(filter['REQUIRED_FIELDS']){
+        required_fields = filter['REQUIRED_FIELDS'].reduce(function(prev,current){
+            if(prev.length>0){
+                return prev+", "+current;
+            }else{
+                return current;
+            }
+        },"")
+    }else {
+        required_fields = "*"
+    }
+
+    var query = "SELECT "+required_fields+" from "+typeName+" ";
     var model = modelUtil.getModel(typeName);
 
     if(filter == undefined){
@@ -176,7 +189,6 @@ exports.filter = function(typeName,filter){
             addOrderField(filter["ORDER"]);
         }
         function addOrderField(orderField) {
-
             query += orderField.field + " ";
             if (orderField.type) {
                 query += orderField.type;
@@ -195,7 +207,7 @@ exports.filter = function(typeName,filter){
 
 
     query+=";";
-    
+
     return query;
 }
 
