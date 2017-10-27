@@ -1,7 +1,7 @@
 {
   "_args": [
     [
-      "apersistence@>=1.0.8",
+      "apersistence@>=1.0.9",
       "/home/ciprian/storage/Workspace/node_modules/swarmcore"
     ]
   ],
