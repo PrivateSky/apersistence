@@ -155,31 +155,50 @@ exports.filter = function(typeName,filter){
             continue;  //in filter we can have fields such as LIMIT
         }
 
+        /*
+            If filter[field] is an array then the elements of the array are disjunctive conditions (put an OR between them e.g. more than or less than)
+            If a condition is an array then the elements are conjunctive conditions (put ANd between them e.g. more than and but less than)
+
+            ['COND_A' or 'COND_B' or ['COND_C' AND 'COND_D']]
+         */
+
         if(Array.isArray(filter[field])){
+            //disjunctive conditions
             query+="( ";
-            filter[field].forEach(function(acceptedValue){
-                if(isComparison(acceptedValue)) {
-                    var sign = acceptedValue.split(/[^<>=!]/)[0].replace(' ', '');
-                    var value = acceptedValue.replace(sign, '').replace(' ', '');
-                    query+=field+sign+mysql.escape(value)+" OR ";    
-                } else {
-                    query+=field+"="+mysql.escape(acceptedValue)+" OR ";
+            filter[field].forEach(function(condition){
+                if(Array.isArray(condition)){
+                    //conjunctive conditions
+                    query+="( ";
+                    condition.forEach(function(subCondition){
+                        insertCondition(field,subCondition,"AND");
+                    })
+                    query = query.slice(0,-4); //cut the last 'AND'
+                    query+=") OR ";
+                }else {
+                    insertCondition(field,condition,"OR");
                 }
             });
             query = query.slice(0,-3); //cut the last 'OR'
             query+=") AND ";
         } else {
-            if(isComparison(filter[field])) {
-                var sign = filter[field].split(/[^<>=!]/)[0].replace(' ', '');
-                var value = filter[field].replace(sign, '').replace(' ', '');
-                query+=field+sign+mysql.escape(value)+" AND ";    
-            } else {
-                query += field + "="+mysql.escape(filter[field])+" AND ";
-            }
+            insertCondition(field,filter[field],"AND");
+        }
+    }
+
+
+    function insertCondition(field,condition,logicalOperator){
+        if(isComparison(condition)) {
+            var sign = condition.split(/[^<>=!]/)[0].replace(' ', '');
+            var value = condition.replace(sign, '').replace(' ', '');
+            query+=field+sign+mysql.escape(value)+" "+logicalOperator+" ";
+        } else {
+            query += field + "="+mysql.escape(condition)+" "+logicalOperator+" ";
         }
     }
 
     query = query.slice(0,-4); //cut the last 'AND'
+
+
 
     if(filter.hasOwnProperty("ORDER")) {
         query += " ORDER BY "

@@ -155,6 +155,14 @@ assert.steps("Mysql test suite",[
                     name:"Ana"
                 },
                 expectedResults: [{id: 4, name: "Ana", location: "Bucuresti",sex:true,age:21}]
+            },
+            {
+                modelName:modelName,
+                filter:{
+                    age:[[">=20","<21"],"22"],  // (>=20 AND <21) OR (=22)
+                    REQUIRED_FIELDS:['name']
+                },
+                expectedResults: [{name: "Dana"},{name: "Dan"},{name: "Ion"}]
             }
         ];
         
